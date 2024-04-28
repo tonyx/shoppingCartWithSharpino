@@ -24,6 +24,7 @@ open ShoppingCart.Supermarket
 open ShoppingCart
 open ShoppingCart.Cart
 open Sharpino
+open Sharpino.TestUtils
 
 [<Tests>]
 let tests =
@@ -38,62 +39,74 @@ let tests =
             "User Id=safe;"+
             "Password=safe;"
 
-    // let eventStore = MemoryStorage()
-    let eventStore = PgEventStore(connection)
+    let eventStoreMemory = MemoryStorage():> IEventStore
+    let eventStorePostgres = PgEventStore(connection):> IEventStore
+
+    let marketInstances =
+        [
+            Supermarket(eventStoreMemory, doNothingBroker), eventStoreMemory, "Memory";
+            Supermarket(eventStorePostgres, doNothingBroker), eventStorePostgres, "Postgres";
+        ]
 
     testList "samples" [
-
-        testCase "there are no good in a Supermarket" <| fun _ ->
+        multipleTestCase "there are no good in a Supermarket" marketInstances <| fun (supermarket, eventStore, _) ->
             setUp eventStore
-            let superMarket =  Supermarket(eventStore, doNothingBroker)
-            let goods = superMarket.Goods
+            let goods = supermarket.Goods
 
             Expect.isOk goods "should be ok"
             Expect.equal goods.OkValue [] "There are no goods in the supermarket."
         
-        testCase "add a good to the supermarket and retrieve it" <| fun _ ->
+        multipleTestCase "add a good to the supermarket and retrieve it" marketInstances <| fun (supermarket, eventStore, _) ->
             setUp eventStore
-            let superMarket =  Supermarket(eventStore, doNothingBroker)
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
-            let added = superMarket.AddGood good
+            let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
-            let retrieved = superMarket.GetGood good.Id
+            let retrieved = supermarket.GetGood good.Id
             Expect.isOk retrieved "should be ok"
             let retrieved' = retrieved.OkValue
             Expect.equal  retrieved'.Id good.Id "should be the same good"
 
-        testCase "add a good and put it in the supermarket" <| fun _ ->
+        multipleTestCase "add a good and put it in the supermarket" marketInstances <| fun (supermarket, eventStore, _) ->
             setUp eventStore
-            let superMarket =  Supermarket(eventStore, doNothingBroker)
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
-            let added = superMarket.AddGood good
+            let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
 
-        testCase "add a good and set its quantity" <| fun _ ->
+        multipleTestCase "add a good and its quantity is zero" marketInstances <| fun (supermarket, eventStore, _) ->
             setUp eventStore
-            let superMarket =  Supermarket(eventStore, doNothingBroker)
             let id = Guid.NewGuid()
             let good = Good(id, "Good", 10.0m, [])
-            let added = superMarket.AddGood good
+            let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
-            let changeQuantity = superMarket.SetGoodsQuantity (id, 10)
-            Expect.isOk changeQuantity "should be ok"
-            let retrievedQuantity = superMarket.GetGoodsQuantity id
+            let retrievedQuantity = supermarket.GetGoodsQuantity id
+            Expect.isOk retrievedQuantity "should be ok"
+            let result = retrievedQuantity.OkValue
+            Expect.equal result 0 "should be the same quantity"
+
+        multipleTestCase "add a good, then increase its quantity - Ok" marketInstances <| fun (supermarket, eventStore, _) ->
+            setUp eventStore
+            let id = Guid.NewGuid()
+            let good = Good(id, "Good", 10.0m, [])
+            let added = supermarket.AddGood good
+            Expect.isOk added "should be ok"
+            let setQuantity = supermarket.AddQuantity(id, 10)
+            Expect.isOk setQuantity "should be ok"
+            let retrievedQuantity = supermarket.GetGoodsQuantity id
             Expect.isOk retrievedQuantity "should be ok"
             let result = retrievedQuantity.OkValue
             Expect.equal result 10 "should be the same quantity"
 
-        testCase "create a cart" <| fun _ ->
+
+        multipleTestCase "create a cart" marketInstances <| fun (supermarket, eventStore, _) ->
             setUp eventStore
-            let superMarket =  Supermarket(eventStore, doNothingBroker)
             let cartId = Guid.NewGuid()
             let cart = Cart(cartId, Map.empty)
-            let basket = superMarket.AddCart cart
+            let basket = supermarket.AddCart cart
             Expect.isOk basket "should be ok"
 
-        testCase "add a good to the cart" <| fun _ ->
-            setUp eventStore
-            let supermarket = Supermarket(eventStore, doNothingBroker)
+        multipleTestCase "add a good, add a quantity and then put something in a cart. the total quantity will be decreased - Ok" marketInstances <| fun (supermarket, eventStore, _) ->
+            setUp eventStorePostgres
+            let supermarket = Supermarket(eventStorePostgres, doNothingBroker)
             let cartId = Guid.NewGuid()
             let cart = Cart(cartId, Map.empty)
             let cartAdded = supermarket.AddCart cart
@@ -103,14 +116,39 @@ let tests =
             let GoodAdded = supermarket.AddGood good
             Expect.isOk GoodAdded "should be ok"
 
-            let addedToCart = supermarket.AddGoodToCart(cartId, good.Id, 10)
+            let addQuantity = supermarket.AddQuantity(good.Id, 10)
+
+            let addedToCart = supermarket.AddGoodToCart(cartId, good.Id, 1)
             Expect.isOk addedToCart "should be ok"
 
             let retrieved = supermarket.GetCart cartId
             Expect.isOk retrieved "should be ok"
 
             let quantityForGood = retrieved.OkValue.Goods.[good.Id]
-            Expect.equal quantityForGood 10 "should be the same quantity"
+            Expect.equal quantityForGood 1 "should be the same quantity"
+
+            let quantity = supermarket.GetGoodsQuantity good.Id
+            Expect.isOk quantity "should be ok"
+
+            let result = quantity.OkValue
+            Expect.equal result 9 "should be the same quantity"
+
+
+        multipleTestCase "add and a good and it's quantity will be zero - Ok" marketInstances <| fun (supermarket, eventStore, _) ->
+            setUp eventStore
+            let cartId = Guid.NewGuid()
+            let cart = Cart(cartId, Map.empty)
+            let cartAdded = supermarket.AddCart cart
+            Expect.isOk cartAdded "should be ok"
+
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
+            let GoodAdded = supermarket.AddGood good
+            Expect.isOk GoodAdded "should be ok"
+            let quantity = supermarket.GetGoodsQuantity good.Id
+            Expect.isOk quantity "should be ok"
+
+            let result = quantity.OkValue
+            Expect.equal result 0 "should be the same quantity"
 
 
     ]

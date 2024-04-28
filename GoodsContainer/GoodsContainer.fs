@@ -50,6 +50,25 @@ module GoodsContainer =
                 return GoodsContainer(goodRefs, quantities |> Map.add goodRef quantity, cartRefs)
             }
 
+        member this.AddQuantity (goodRef: Guid, quantity: int) =
+            result {
+                do! 
+                    this.GoodRefs 
+                    |> List.contains goodRef
+                    |> Result.ofBool "Good not in items list"
+                let newQuantity = quantities.[goodRef] + quantity
+                return GoodsContainer(goodRefs, quantities |> Map.add goodRef newQuantity, cartRefs)
+            }
+        member this.RemoveQuantity (goodRef: Guid, quantity: int) =
+            result {
+                do! 
+                    this.GoodRefs 
+                    |> List.contains goodRef
+                    |> Result.ofBool "Good not in items list"
+                let newQuantity = quantities.[goodRef] - quantity
+                return GoodsContainer(goodRefs, quantities |> Map.add goodRef newQuantity, cartRefs)
+            }
+
         member this.AddCart (cartRef: Guid) =
             GoodsContainer(goodRefs, quantities, cartRef :: cartRefs) |> Ok
 

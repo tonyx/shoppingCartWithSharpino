@@ -16,6 +16,8 @@ module GoodsContainerEvents =
         | GoodRemoved of Guid
         | CartAdded of Guid
         | QuantityChanged of Guid * int
+        | QuantityAdded of Guid * int
+        | QuantityRemoved of Guid * int
             interface Event<GoodsContainer> with
                 member this.Process (goodsContainer: GoodsContainer) =
                     match this with
@@ -24,6 +26,10 @@ module GoodsContainerEvents =
                     | QuantityChanged (goodRef, quantity) -> 
                         goodsContainer.SetQuantity (goodRef, quantity)
                     | CartAdded cartRef -> goodsContainer.AddCart cartRef
+                    | QuantityAdded (goodRef, quantity) -> 
+                        goodsContainer.AddQuantity (goodRef, quantity)
+                    | QuantityRemoved (goodRef, quantity) -> 
+                        goodsContainer.RemoveQuantity (goodRef, quantity)
 
         static member Deserialize (serializer: ISerializer, json: string) =
             serializer.Deserialize<GoodsContainerEvents>(json)
