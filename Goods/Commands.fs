@@ -20,6 +20,8 @@ module GoodCommands =
     type GoodCommands =
         | ChangePrice of decimal
         | ChangeDiscounts of List<Good.Discount>
+        | AddQuantity of int
+        | RemoveQuantity of int
             interface Command<Good, GoodEvents> with
                 member this.Execute (good: Good) =
                     match this with
@@ -29,4 +31,10 @@ module GoodCommands =
                     | ChangeDiscounts discounts ->
                         good.ChangeDiscounts discounts
                         |> Result.map (fun x -> [DiscountsChanged discounts])
+                    | AddQuantity quantity ->
+                        good.AddQuantity quantity
+                        |> Result.map (fun x -> [QuantityAdded quantity])
+                    | RemoveQuantity quantity ->
+                        good.RemoveQuantity quantity
+                        |> Result.map (fun x -> [QuantityRemoved quantity])
                 member this.Undoer = None
