@@ -15,6 +15,7 @@ open MBrace.FsPickler.Combinators
 open ShoppingCart.Good
 
 module GoodEvents =
+    let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type GoodEvents =   
     | PriceChanged of decimal
     | DiscountsChanged of List<Good.Discount>
@@ -30,8 +31,12 @@ module GoodEvents =
                 | QuantityRemoved quantity -> good.RemoveQuantity quantity
 
         static member Deserialize (serializer: ISerializer, json: string) =
-            serializer.Deserialize<GoodEvents>(json)
+            try
+                pickler.UnPickleOfString<GoodEvents> json |> Ok
+            with
+            | ex -> Error ex.Message
+
         member this.Serialize(serializer: ISerializer) =
-            this |> serializer.Serialize
+            pickler.PickleToString this
 
 

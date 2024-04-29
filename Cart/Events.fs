@@ -16,6 +16,7 @@ open MBrace.FsPickler.Combinators
 open ShoppingCart.Cart
 
 module CartEvents =
+    let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type CartEvents =
     | GoodAdded of Guid * int
         interface Event<Cart> with
@@ -24,6 +25,10 @@ module CartEvents =
                 | GoodAdded (goodRef, quantity) -> cart.AddGood (goodRef, quantity)
 
         static member Deserialize (serializer: ISerializer, json: string) =
-            serializer.Deserialize<CartEvents>(json)
+            try
+                pickler.UnPickleOfString<CartEvents> json |> Ok
+            with
+            | ex -> Error ex.Message
+
         member this.Serialize(serializer: ISerializer) =
-            this |> serializer.Serialize
+            pickler.PickleToString this

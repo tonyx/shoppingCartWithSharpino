@@ -156,7 +156,6 @@ let tests =
             Expect.equal result 0 "should be the same quantity"
 
         multipleTestCase "can't add twice a good with the same name - Error" marketInstances <| fun (supermarket, eventStore, text) ->
-            // let supermarket = fsupermarket()
             setUp eventStore
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
@@ -165,6 +164,29 @@ let tests =
             let good2 = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let addedTwice = supermarket.AddGood good2
             Expect.isError addedTwice "should be an error"
+
+        multipleTestCase "add a good and remove it - Ok" marketInstances <| fun (supermarket, eventStore, _) ->
+            setUp eventStore
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
+            let added = supermarket.AddGood good
+            Expect.isOk added "should be ok"
+            let removed = supermarket.RemoveGood good.Id
+            Expect.isOk removed "should be ok"
+
+            let retrieved = supermarket.GetGood good.Id
+            Expect.isError retrieved "should be an error"
+
+        multipleTestCase  "when remove a good then can gets its quantity - Error" marketInstances <| fun (supermarket, eventStore, _) ->
+            setUp eventStore
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
+            let added = supermarket.AddGood good
+            Expect.isOk added "should be ok"
+            let removed = supermarket.RemoveGood good.Id
+            Expect.isOk removed "should be ok"
+
+            let quantity = supermarket.GetGoodsQuantity good.Id
+            Expect.isError quantity "should be an error"
+
 
     ]
     |> testSequenced

@@ -11,6 +11,7 @@ open FsToolkit.ErrorHandling
 
 module GoodsContainer =
 
+    let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type GoodsContainer(goodRefs: List<Guid>, cartRefs: List<Guid>) =
 
         let stateId = Guid.NewGuid()
@@ -47,9 +48,12 @@ module GoodsContainer =
         static member Lock =
             new Object()
         static member Deserialize (serializer: ISerializer, json: string) =
-            serializer.Deserialize<GoodsContainer>(json)
+            try 
+                pickler.UnPickleOfString<GoodsContainer> json |> Ok
+            with
+            | ex -> Error ex.Message
         member this.Serialize(serializer: ISerializer) =
-            serializer.Serialize this
+            pickler.PickleToString this
 
 
 

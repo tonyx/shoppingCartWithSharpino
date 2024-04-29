@@ -13,6 +13,7 @@ open FsToolkit.ErrorHandling
 open MBrace.FsPickler.Combinators
 
 module Cart =
+    let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type Cart(id: Guid, goods: Map<Guid, int>) =
         let stateId = Guid.NewGuid()
 
@@ -36,9 +37,12 @@ module Cart =
         static member Version = "_01"
         static member SnapshotsInterval = 15
         static member Deserialize (serializer: ISerializer, json: string) =
-            serializer.Deserialize<Cart> json
+            try
+                pickler.UnPickleOfString<Cart> json |> Ok
+            with 
+            | ex -> Error ex.Message
         member this.Serialize(serializer: ISerializer) =
-            serializer.Serialize this
+            pickler.PickleToString this
 
         interface Aggregate with
             member this.Id = this.Id

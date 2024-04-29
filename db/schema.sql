@@ -47,7 +47,7 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_cart(event, aggregate_id, timestamp)
-VALUES(event_in::JSON, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
@@ -84,7 +84,7 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_good(event, aggregate_id, timestamp)
-VALUES(event_in::JSON, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
@@ -101,7 +101,7 @@ DECLARE
     inserted_id integer;
 BEGIN
     INSERT INTO events_01_goodsContainer(event, timestamp, context_state_id)
-    VALUES(event_in::JSON, now(), context_state_id) RETURNING id INTO inserted_id;
+    VALUES(event_in::text, now(), context_state_id) RETURNING id INTO inserted_id;
     return inserted_id;
 
 END;
@@ -259,7 +259,7 @@ CREATE TABLE public.aggregate_events_01_good (
 CREATE TABLE public.events_01_cart (
     id integer NOT NULL,
     aggregate_id uuid NOT NULL,
-    event json NOT NULL,
+    event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
     kafkaoffset bigint,
     kafkapartition integer,
@@ -288,7 +288,7 @@ ALTER TABLE public.events_01_cart ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTI
 CREATE TABLE public.events_01_good (
     id integer NOT NULL,
     aggregate_id uuid NOT NULL,
-    event json NOT NULL,
+    event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
     kafkaoffset bigint,
     kafkapartition integer,
@@ -316,7 +316,7 @@ ALTER TABLE public.events_01_good ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTI
 
 CREATE TABLE public.events_01_goodscontainer (
     id integer NOT NULL,
-    event json NOT NULL,
+    event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
     kafkaoffset bigint,
     kafkapartition integer,
@@ -366,7 +366,7 @@ CREATE SEQUENCE public.snapshots_01_cart_id_seq
 
 CREATE TABLE public.snapshots_01_cart (
     id integer DEFAULT nextval('public.snapshots_01_cart_id_seq'::regclass) NOT NULL,
-    snapshot json NOT NULL,
+    snapshot text NOT NULL,
     event_id integer,
     aggregate_id uuid NOT NULL,
     aggregate_state_id uuid,
@@ -392,7 +392,7 @@ CREATE SEQUENCE public.snapshots_01_good_id_seq
 
 CREATE TABLE public.snapshots_01_good (
     id integer DEFAULT nextval('public.snapshots_01_good_id_seq'::regclass) NOT NULL,
-    snapshot json NOT NULL,
+    snapshot text NOT NULL,
     event_id integer,
     aggregate_id uuid NOT NULL,
     aggregate_state_id uuid,
@@ -418,7 +418,7 @@ CREATE SEQUENCE public.snapshots_01_goodscontainer_id_seq
 
 CREATE TABLE public.snapshots_01_goodscontainer (
     id integer DEFAULT nextval('public.snapshots_01_goodscontainer_id_seq'::regclass) NOT NULL,
-    snapshot json NOT NULL,
+    snapshot text NOT NULL,
     event_id integer NOT NULL,
     "timestamp" timestamp without time zone NOT NULL
 );
