@@ -38,13 +38,6 @@ module Supermarket =
                 return state.GoodRefs
             }
 
-        member private this.SetGoodsQuantity (goodRef: Guid, quantity: int) = 
-            result {
-                return! 
-                    (goodRef, quantity)
-                    |> SetQuantity
-                    |> runCommand<GoodsContainer, GoodsContainerEvents> eventStore eventBroker goodsContainerViewer
-            }
         member this.GetGoodsQuantity (goodRef: Guid) = 
             result {
                 let! (_, state, _, _) = goodsViewer goodRef
@@ -68,6 +61,8 @@ module Supermarket =
         member this.Goods =
             result {
                 let! (_, state, _, _) = goodsContainerViewer ()
+
+                // warning: if there is a ref to an unexisting good you are in trouble. fix it
                 let! goods =
                     state.GoodRefs
                     |> List.map this.GetGood
@@ -79,14 +74,19 @@ module Supermarket =
             // we may want to taste the transactionality here as there are two operations
             // this inspire to add a features like runInitAndTwoCommands
             result {
+                let existingGoods = 
+                    this.Goods
+                    |> Result.defaultValue []
+                do! 
+                    existingGoods
+                    |> List.exists (fun g -> g.Name = good.Name)
+                    |> not
+                    |> Result.ofBool "Good already in items list"
+
                 let! goodAdded =
                     good.Id 
                     |> AddGood 
                     |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good> eventStore eventBroker goodsContainerViewer good
-                let! quantitySet =
-                    (good.Id, 0)
-                    |> SetQuantity
-                    |> runCommand<GoodsContainer, GoodsContainerEvents> eventStore eventBroker goodsContainerViewer
                 return! Ok ()
             }
 
@@ -108,43 +108,32 @@ module Supermarket =
             result {
                 // under comment the code as it was before ingroducing runTwoNAggregateCommands
 
-                // let! good = this.GetGood goodRef
-                // let! cart = this.GetCart cartRef
+                let! good = this.GetGood goodRef
+                let! cart = this.GetCart cartRef
+                let removeAQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
+                let! removedFromGood = 
+                    [removeAQuantity]
+                    |> runNAggregateCommands<Good, GoodEvents> [goodRef] eventStore eventBroker goodsViewer
+                let commandAddAQuantity: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
+                let! addedToCart = 
+                    [commandAddAQuantity]
+                    |> runNAggregateCommands<Cart, CartEvents> [cartRef] eventStore eventBroker cartViewer
+
+
                 // let commandRemoveQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                // let! removedFromGood = 
-                //     [commandRemoveQuantity]
-                //     |> runNAggregateCommands<Good, GoodEvents> [goodRef] eventStore eventBroker goodsViewer
                 // let commandAddGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
-                // let! addedToCart = 
-                //     [commandAddGood]
-                //     |> runNAggregateCommands<Cart, CartEvents> [cartRef] eventStore eventBroker cartViewer
 
-                let commandRemoveQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                let commandAddGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
-
-                let! moveFromGoodToCart =
-                    runTwoNAggregateCommands 
-                        [goodRef]
-                        [cartRef] 
-                        eventStore 
-                        eventBroker 
-                        goodsViewer 
-                        cartViewer
-                        [commandRemoveQuantity] 
-                        [commandAddGood] 
+                // let! moveFromGoodToCart =
+                //     runTwoNAggregateCommands 
+                //         [goodRef]
+                //         [cartRef] 
+                //         eventStore 
+                //         eventBroker 
+                //         goodsViewer 
+                //         cartViewer
+                //         [commandRemoveQuantity] 
+                //         [commandAddGood] 
                 return Ok
-
-
-
-
-
-
-
-
-
-
-
-
 
             }
 

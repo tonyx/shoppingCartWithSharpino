@@ -32,6 +32,9 @@ module Good =
         new (id: Guid, name: string, price: decimal, discounts: Discounts) =
             Good (id, name, price, discounts, 0)
 
+        new (id: Guid, name: string, price: decimal) =
+            Good (id, name, price, [], 0)
+
         member this.SetPrice (price: decimal) =
             Good (this.Id, this.Name, price, this.Discounts, quantity) |> Ok
 

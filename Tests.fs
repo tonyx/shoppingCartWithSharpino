@@ -29,9 +29,12 @@ open Sharpino.TestUtils
 [<Tests>]
 let tests =
     let setUp (eventStore: IEventStore) =
-        eventStore.Reset Good.Version Good.StorageName
         eventStore.Reset GoodsContainer.Version GoodsContainer.StorageName
+        eventStore.Reset Good.Version Good.StorageName
         eventStore.ResetAggregateStream Good.Version Good.StorageName
+
+        eventStore.Reset Cart.Version Cart.StorageName
+        eventStore.ResetAggregateStream Cart.Version Cart.StorageName
 
     let connection = 
             "Server=127.0.0.1;" +
@@ -44,13 +47,15 @@ let tests =
 
     let marketInstances =
         [
-            Supermarket(eventStoreMemory, doNothingBroker), eventStoreMemory, "Memory";
             Supermarket(eventStorePostgres, doNothingBroker), eventStorePostgres, "Postgres";
+            Supermarket(eventStoreMemory, doNothingBroker), eventStoreMemory, "Memory";
         ]
 
     testList "samples" [
         multipleTestCase "there are no good in a Supermarket" marketInstances <| fun (supermarket, eventStore, _) ->
             setUp eventStore
+            // let supermarket = fsupermarket()
+
             let goods = supermarket.Goods
 
             Expect.isOk goods "should be ok"
@@ -150,6 +155,16 @@ let tests =
             let result = quantity.OkValue
             Expect.equal result 0 "should be the same quantity"
 
+        multipleTestCase "can't add twice a good with the same name - Error" marketInstances <| fun (supermarket, eventStore, text) ->
+            // let supermarket = fsupermarket()
+            setUp eventStore
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
+            let added = supermarket.AddGood good
+            Expect.isOk added "should be ok"
+
+            let good2 = Good(Guid.NewGuid(), "Good", 10.0m, [])
+            let addedTwice = supermarket.AddGood good2
+            Expect.isError addedTwice "should be an error"
 
     ]
     |> testSequenced

@@ -11,7 +11,7 @@ open FsToolkit.ErrorHandling
 
 module GoodsContainer =
 
-    type GoodsContainer(goodRefs: List<Guid>, quantities: Map<Guid, int>, cartRefs: List<Guid>) =
+    type GoodsContainer(goodRefs: List<Guid>, cartRefs: List<Guid>) =
 
         let stateId = Guid.NewGuid()
         member this.StateId = stateId
@@ -25,7 +25,7 @@ module GoodsContainer =
                     |> List.contains goodRef
                     |> not
                     |> Result.ofBool "Good already in items list"
-                return GoodsContainer(goodRef :: goodRefs, quantities, cartRefs)
+                return GoodsContainer(goodRef :: goodRefs, cartRefs)
             }
 
         member this.RemoveGood(goodRef: Guid) =
@@ -34,49 +34,13 @@ module GoodsContainer =
                     this.GoodRefs 
                     |> List.contains goodRef
                     |> Result.ofBool "Good not in items list"
-                return GoodsContainer(goodRefs |> List.filter (fun x -> x <> goodRef), quantities, cartRefs)
-            }
-
-        member this.SetQuantity(goodRef: Guid, quantity: int) =
-            result {
-                do! 
-                    this.GoodRefs 
-                    |> List.contains goodRef
-                    |> Result.ofBool "Good not in items list"
-                do!
-                    quantities.Keys.Contains goodRef
-                    |> not
-                    |> Result.ofBool "Good not in quantities list"
-                return GoodsContainer(goodRefs, quantities |> Map.add goodRef quantity, cartRefs)
-            }
-
-        member this.AddQuantity (goodRef: Guid, quantity: int) =
-            result {
-                do! 
-                    this.GoodRefs 
-                    |> List.contains goodRef
-                    |> Result.ofBool "Good not in items list"
-                let newQuantity = quantities.[goodRef] + quantity
-                return GoodsContainer(goodRefs, quantities |> Map.add goodRef newQuantity, cartRefs)
-            }
-        member this.RemoveQuantity (goodRef: Guid, quantity: int) =
-            result {
-                do! 
-                    this.GoodRefs 
-                    |> List.contains goodRef
-                    |> Result.ofBool "Good not in items list"
-                let newQuantity = quantities.[goodRef] - quantity
-                return GoodsContainer(goodRefs, quantities |> Map.add goodRef newQuantity, cartRefs)
+                return GoodsContainer(goodRefs |> List.filter (fun x -> x <> goodRef), cartRefs)
             }
 
         member this.AddCart (cartRef: Guid) =
-            GoodsContainer(goodRefs, quantities, cartRef :: cartRefs) |> Ok
+            GoodsContainer(goodRefs, cartRef :: cartRefs) |> Ok
 
-        member this.GetQuantity (goodRef: Guid) =
-            quantities.TryFind goodRef
-            |> Result.ofOption "Good not in quantities list"
-
-        static member Zero = GoodsContainer([], [] |> Map.ofList, [])
+        static member Zero = GoodsContainer([], [])
         static member StorageName = "_goodsContainer"
         static member Version = "_01"
         static member SnapshotsInterval = 15
