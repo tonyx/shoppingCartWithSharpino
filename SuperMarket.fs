@@ -1,6 +1,7 @@
 namespace ShoppingCart
 
 open ShoppingCart.Good
+open ShoppingCart.Commons
 open ShoppingCart.GoodEvents
 open ShoppingCart.GoodCommands
 open ShoppingCart.GoodsContainer
@@ -27,10 +28,10 @@ module Supermarket =
         {  notify = None
            notifyAggregate = None }
 
-    type Supermarket(eventStore: IEventStore, eventBroker: IEventBroker) =
-        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer,GoodsContainerEvents> eventStore
-        let goodsViewer = getAggregateStorageFreshStateViewer<Good,GoodEvents> eventStore
-        let cartViewer = getAggregateStorageFreshStateViewer<Cart,CartEvents> eventStore
+    type Supermarket (eventStore: IEventStore<string>, eventBroker: IEventBroker) =
+        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, string> eventStore
+        let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStore
+        let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStore
 
         member this.GoodRefs = 
             result {
@@ -56,7 +57,7 @@ module Supermarket =
                 let command = GoodCommands.AddQuantity  quantity
                 return! 
                     command 
-                    |> runAggregateCommand<Good, GoodEvents> goodRef eventStore eventBroker goodsViewer
+                    |> runAggregateCommand<Good, GoodEvents, string> goodRef eventStore eventBroker goodsViewer
             }
 
         member this.GetGood (goodRef: Guid) = 
@@ -95,7 +96,7 @@ module Supermarket =
                 let! goodAdded =
                     good.Id 
                     |> AddGood 
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good> eventStore eventBroker goodsContainerViewer good
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker goodsContainerViewer good
                 return! Ok ()
             }
 
@@ -106,7 +107,7 @@ module Supermarket =
                 let command = GoodsContainerCommands.RemoveGood goodRef
                 return! 
                     command
-                    |> runCommand<GoodsContainer, GoodsContainerEvents> eventStore eventBroker goodsContainerViewer
+                    |> runCommand<GoodsContainer, GoodsContainerEvents, string> eventStore eventBroker goodsContainerViewer
             }
 
         member this.AddCart (cart: Cart) = 
@@ -114,7 +115,7 @@ module Supermarket =
                 return! 
                     cart.Id
                     |> AddCart
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart> eventStore eventBroker goodsContainerViewer cart
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, string> eventStore eventBroker goodsContainerViewer cart
             }
 
         member this.GetCart (cartRef: Guid) = 

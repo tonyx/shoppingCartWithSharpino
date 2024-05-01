@@ -1,5 +1,5 @@
 namespace ShoppingCart 
-
+open ShoppingCart.Commons
 open System
 open Sharpino
 open Sharpino.Core
@@ -30,13 +30,10 @@ module GoodEvents =
                 | QuantityAdded quantity -> good.AddQuantity quantity
                 | QuantityRemoved quantity -> good.RemoveQuantity quantity
 
-        static member Deserialize (serializer: ISerializer, json: string) =
-            try
-                pickler.UnPickleOfString<GoodEvents> json |> Ok
-            with
-            | ex -> Error ex.Message
+        static member Deserialize (serializer: ISerializer, json: 'F) =
+            globalSerializer.Deserialize<GoodEvents> json // |> Ok
 
         member this.Serialize(serializer: ISerializer) =
-            pickler.PickleToString this
+            globalSerializer.Serialize this
 
 
