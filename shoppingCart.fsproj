@@ -25,14 +25,16 @@
 
   <ItemGroup>
     <PackageReference Include="Expecto" Version="10.2.1" />
-    <!-- <PackageReference Include="Sharpino" Version="1.6.6" /> -->
+    <PackageReference Include="Sharpino" Version="2.0.0" />
     <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Update="FSharp.Core" Version="8.*" />
   </ItemGroup>
 
+<!-- 
   <ItemGroup>
     <ProjectReference Include="..\..\realsharpino\Sharpino\Sharpino.Lib\Sharpino.Lib.fsproj" />
   </ItemGroup>
+ -->
 
 </Project>

@@ -49,8 +49,6 @@ module Cart =
             member this.Lock = this
             member this.StateId = this.StateId
         
-        interface Entity with
-            member this.Id = this.Id
 
 
 

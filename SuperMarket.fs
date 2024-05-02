@@ -24,14 +24,14 @@ open FsToolkit.ErrorHandling
 
 module Supermarket =
     open Sharpino.CommandHandler
-    let doNothingBroker: IEventBroker =
+    let doNothingBroker: IEventBroker<'F> =
         {  notify = None
            notifyAggregate = None }
 
-    type Supermarket (eventStore: IEventStore<byte[]>, eventBroker: IEventBroker) =
-        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, byte[]> eventStore
-        let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, byte[]> eventStore
-        let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, byte[]> eventStore
+    type Supermarket (eventStore: IEventStore<'F>, eventBroker: IEventBroker<'F>) =
+        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, 'F> eventStore
+        let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, 'F> eventStore
+        let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, 'F> eventStore
 
         member this.GoodRefs = 
             result {
@@ -44,30 +44,29 @@ module Supermarket =
                 return state.CartRefs
             }
 
-        member this.GetGoodsQuantity (goodRef: Guid) = 
+        member this.GetGoodsQuantity (goodId: Guid) = 
             result {
-                let! esists = this.GetGood goodRef
-                let! (_, state, _, _) = goodsViewer goodRef
+                let! esists = this.GetGood goodId
+                let! (_, state, _, _) = goodsViewer goodId
                 return state.Quantity
             }
 
-        member this.AddQuantity (goodRef: Guid, quantity: int) = 
+        member this.AddQuantity (goodId: Guid, quantity: int) = 
             result {
-                let! (_, state, _, _) = goodsViewer goodRef
-                let command = GoodCommands.AddQuantity  quantity
                 return! 
-                    command 
-                    |> runAggregateCommand<Good, GoodEvents, byte[]> goodRef eventStore eventBroker goodsViewer
+                    quantity
+                    |> AddQuantity
+                    |> runAggregateCommand<Good, GoodEvents, 'F> goodId eventStore eventBroker goodsViewer
             }
 
-        member this.GetGood (goodRef: Guid) = 
+        member this.GetGood (id: Guid) = 
             result {
                 let! goods = this.GoodRefs
                 let! goodExist = 
                     goods
-                    |> List.tryFind (fun g -> g = goodRef)
+                    |> List.tryFind (fun g -> g = id)
                     |> Result.ofOption "Good not found"
-                let! (_, state, _, _) = goodsViewer goodRef
+                let! (_, state, _, _) = goodsViewer id
                 return state
             }
         member this.Goods =
@@ -96,18 +95,16 @@ module Supermarket =
                 let! goodAdded =
                     good.Id 
                     |> AddGood 
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, byte[]> eventStore eventBroker goodsContainerViewer good
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker goodsContainerViewer good
                 return! Ok ()
             }
 
-        member this.RemoveGood (goodRef: Guid) = 
+        member this.RemoveGood (id: Guid) = 
             result {
-                let! good = this.GetGood goodRef
-                let! (_, state, _, _) = goodsContainerViewer ()
-                let command = GoodsContainerCommands.RemoveGood goodRef
                 return! 
-                    command
-                    |> runCommand<GoodsContainer, GoodsContainerEvents, byte[]> eventStore eventBroker goodsContainerViewer
+                    id
+                    |> RemoveGood
+                    |> runCommand<GoodsContainer, GoodsContainerEvents, 'F> eventStore eventBroker goodsContainerViewer
             }
 
         member this.AddCart (cart: Cart) = 
@@ -115,7 +112,7 @@ module Supermarket =
                 return! 
                     cart.Id
                     |> AddCart
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, byte[]> eventStore eventBroker goodsContainerViewer cart
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, 'F> eventStore eventBroker goodsContainerViewer cart
             }
 
         member this.GetCart (cartRef: Guid) = 
@@ -129,15 +126,15 @@ module Supermarket =
                 return state
             }
 
-        member this.AddGoodToCart (cartRef: Guid, goodRef: Guid, quantity: int) =
+        member this.AddGoodToCart (cartId: Guid, goodId: Guid, quantity: int) =
             result {
                 let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
+                let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
 
                 let! moveFromGoodToCart =
                     runTwoNAggregateCommands 
-                        [goodRef]
-                        [cartRef] 
+                        [goodId]
+                        [cartId] 
                         eventStore 
                         eventBroker 
                         goodsViewer 

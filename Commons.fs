@@ -15,15 +15,15 @@ open MBrace.FsPickler
 
 module Commons =
 
-    type MySerializer<'F> =
+    type Serialization<'F> =
         abstract member Deserialize<'A> : 'F -> Result<'A, string>
         abstract member Serialize<'A> : 'A -> 'F
 
     let jsonPickler = FsPickler.CreateJsonSerializer(indent = false)
     let binaryPickle = FsPickler.CreateBinarySerializer()
 
-    let jsonPicklerSerializer =
-        { new MySerializer<string> with
+    let jsonSerializer =
+        { new Serialization<string> with
             member this.Deserialize<'A> json =
                 try
                     jsonPickler.UnPickleOfString<'A> json |> Ok
@@ -33,8 +33,8 @@ module Commons =
                 jsonPickler.PickleToString obj
         }
     
-    let binaryPicklerSerializer = 
-        { new MySerializer<byte[]> with
+    let binarySerializer = 
+        { new Serialization<byte[]> with
             member this.Deserialize<'A> (bytes: byte[]) =
                 try
                     binaryPickle.UnPickle<'A> bytes |> Ok
@@ -44,5 +44,6 @@ module Commons =
                 binaryPickle.Pickle obj
         }
 
-    let globalSerializer: MySerializer<_> = binaryPicklerSerializer
-    let jsonSerializer: MySerializer<_> = jsonPicklerSerializer
+    // let globalSerializer: MySerializer<_> = binaryPicklerSerializer
+    let globalSerializer: Serialization<_> = binarySerializer
+    // let jsonSerializer: MySerializer<_> = jsonPicklerSerializer

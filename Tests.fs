@@ -59,9 +59,9 @@ let tests =
 
     let marketInstances =
         [
-            Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
+            // Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
             // Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
-            // Supermarket(eventStorePostgresBin, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStorePostgresBin ; 
+            Supermarket(eventStorePostgresBin, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStorePostgresBin ; 
         ]
 
     testList "samples" [
@@ -79,7 +79,7 @@ let tests =
         multipleTestCase "add a good to the supermarket and retrieve it" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
 
-            let good = Good(Guid.NewGuid(), "Good", 10.0m, [], jsonPicklerSerializer)
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
             let retrieved = supermarket.GetGood good.Id
@@ -90,7 +90,7 @@ let tests =
         multipleTestCase "add a good and put it in the supermarket" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
 
-            let good = Good(Guid.NewGuid(), "Good", 10.0m, [], jsonPicklerSerializer)
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
 
@@ -98,7 +98,7 @@ let tests =
             setup ()
 
             let id = Guid.NewGuid()
-            let good = Good(id, "Good", 10.0m, [], jsonPicklerSerializer)
+            let good = Good(id, "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
             let retrievedQuantity = supermarket.GetGoodsQuantity id
@@ -110,7 +110,7 @@ let tests =
             setup ()
 
             let id = Guid.NewGuid()
-            let good = Good(id, "Good", 10.0m, [], jsonPicklerSerializer)
+            let good = Good(id, "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
             let setQuantity = supermarket.AddQuantity(id, 10)
@@ -136,7 +136,7 @@ let tests =
             let cartAdded = supermarket.AddCart cart
             Expect.isOk cartAdded "should be ok"
 
-            let good = Good(Guid.NewGuid(), "Good", 10.0m, [], jsonPicklerSerializer)
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let GoodAdded = supermarket.AddGood good
             Expect.isOk GoodAdded "should be ok"
 
@@ -166,7 +166,7 @@ let tests =
             let cartAdded = supermarket.AddCart cart
             Expect.isOk cartAdded "should be ok"
 
-            let good = Good(Guid.NewGuid(), "Good", 10.0m, [], jsonPicklerSerializer)
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let GoodAdded = supermarket.AddGood good
             Expect.isOk GoodAdded "should be ok"
             let quantity = supermarket.GetGoodsQuantity good.Id
@@ -178,18 +178,18 @@ let tests =
         multipleTestCase "can't add twice a good with the same name - Error" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup()
 
-            let good = Good(Guid.NewGuid(), "Good", 10.0m, [],  jsonPicklerSerializer)
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
 
-            let good2 = Good(Guid.NewGuid(), "Good", 10.0m, [], jsonPicklerSerializer)
+            let good2 = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let addedTwice = supermarket.AddGood good2
             Expect.isError addedTwice "should be an error"
 
         multipleTestCase "add a good and remove it - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
 
-            let good = Good(Guid.NewGuid(), "Good", 10.0m, [],  jsonPicklerSerializer)
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
             let removed = supermarket.RemoveGood good.Id
@@ -200,7 +200,7 @@ let tests =
 
         multipleTestCase  "when remove a good then can gets its quantity - Error" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
-            let good = Good(Guid.NewGuid(), "Good", 10.0m, [],  jsonPicklerSerializer)
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
             let removed = supermarket.RemoveGood good.Id
