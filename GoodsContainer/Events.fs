@@ -24,7 +24,7 @@ module GoodsContainerEvents =
                     | GoodRemoved goodRef -> goodsContainer.RemoveGood goodRef
                     | CartAdded cartRef -> goodsContainer.AddCart cartRef
 
-        static member Deserialize json =
-            json |> globalSerializer.Deserialize<GoodsContainerEvents>
+        static member Deserialize x =
+            x |> globalSerializer.Deserialize<GoodsContainerEvents>
         member this.Serialize  =
             this |> globalSerializer.Serialize

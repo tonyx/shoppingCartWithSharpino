@@ -1,34 +1,16 @@
 module Tests
 
 open ShoppingCart.Good
-open ShoppingCart.Commons
-open ShoppingCart.GoodEvents
-open ShoppingCart.GoodCommands
 open ShoppingCart.GoodsContainer
-open ShoppingCart.GoodsContainerEvents
-open ShoppingCart.GoodsContainerCommands
-open System
-open Sharpino
-open Sharpino.Storage
-open Sharpino.Core
-open Sharpino.Lib.Core.Commons
-open Sharpino.Utils
-open Sharpino.Core
-open Sharpino.Utils
-open Sharpino.Result
-open Sharpino.PgStorage
-open Sharpino.PgBinaryStore
-open Expecto
-open Sharpino
-open Sharpino.MemoryStorage
-open ShoppingCart
 open ShoppingCart.Supermarket
-open ShoppingCart
 open ShoppingCart.Cart
-open Sharpino
+open System
+open Sharpino.Storage
+open Sharpino.PgStorage
 open Sharpino.TestUtils
-open MBrace.FsPickler.Json
-open MBrace.FsPickler
+open Sharpino.PgBinaryStore
+open Sharpino.MemoryStorage
+open Expecto
 
 [<Tests>]
 let tests =
@@ -59,14 +41,13 @@ let tests =
 
     let marketInstances =
         [
+            // can't use the "multiple tests" feature as there are insufficient genericity at the moment
             // Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
             // Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
             Supermarket(eventStorePostgresBin, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStorePostgresBin ; 
         ]
 
     testList "samples" [
-        // testCase "asdfasdf" <| fun _ -> 
-        //     Expect.isTrue true "true"
 
         multipleTestCase "there are no good in a Supermarket" marketInstances <| fun (supermarket, eventStore, setup ) ->
             setup()

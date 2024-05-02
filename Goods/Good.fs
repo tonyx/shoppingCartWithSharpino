@@ -3,18 +3,9 @@ open System
 open ShoppingCart.Commons
 open Sharpino
 open Sharpino.Core
-open Sharpino.Lib.Core.Commons
-open Sharpino.Utils
-open Sharpino.Result
-open Sharpino.Definitions
-open FSharpPlus
-open MBrace.FsPickler.Json
 open FsToolkit.ErrorHandling
-open MBrace.FsPickler.Combinators
-open Newtonsoft.Json
 
 module Good =
-    let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type Discount =
         { ItemNumber: int
           Price: decimal }
@@ -53,9 +44,8 @@ module Good =
         static member StorageName = "_good"
         static member Version = "_01"
         static member SnapshotsInterval = 15 
-        // static member Deserialize (serializer, json)  =
-        static member Deserialize json  =
-            globalSerializer.Deserialize json 
+        static member Deserialize x =
+            x |> globalSerializer.Deserialize
         member this.Serialize =
             globalSerializer.Serialize this
 
