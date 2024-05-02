@@ -20,6 +20,7 @@ open Sharpino.Core
 open Sharpino.Utils
 open Sharpino.Result
 open Sharpino.PgStorage
+open FSharpPlus
 open FsToolkit.ErrorHandling
 
 module Supermarket =
@@ -141,6 +142,37 @@ module Supermarket =
                         cartViewer
                         [removeQuantity] 
                         [addGood] 
+                return ()
+            }
+
+        member this.AddGoodsToCart (cartId: Guid, goods: (Guid * int) list) =
+            result {
+                let commands = 
+                    goods
+                    |> List.map (fun (goodId, quantity) -> 
+                        let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
+                        let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
+                        (removeQuantity, addGood)
+                    )
+                let goodIds = goods |>> fst
+                let commandRemove = commands |>> fst
+                let commandAdd = commands |>> snd
+                let size = goods.Length
+
+                let cartids =
+                    [1..size] |>> (fun _ -> cartId)
+                
+                let! moveFromGoodToCart =
+                    runTwoNAggregateCommands 
+                        goodIds
+                        cartids
+                        eventStore 
+                        eventBroker 
+                        goodsViewer 
+                        cartViewer
+                        commandRemove
+                        commandAdd
+                
                 return ()
             }
 
