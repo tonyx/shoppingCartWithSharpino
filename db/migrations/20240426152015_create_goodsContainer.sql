@@ -55,7 +55,7 @@ DECLARE
     inserted_id integer;
 BEGIN
     INSERT INTO events_01_goodsContainer(event, timestamp, context_state_id)
-    VALUES(event_in::bytea, now(), context_state_id) RETURNING id INTO inserted_id;
+    VALUES(event_in::bytea, (now() at time zone 'utc'), context_state_id) RETURNING id INTO inserted_id;
     return inserted_id;
 
 END;

@@ -47,7 +47,7 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_cart(event, aggregate_id, timestamp)
-VALUES(event_in::bytea, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::bytea, aggregate_id,  (now() at time zone 'utc')) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
@@ -84,7 +84,7 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_good(event, aggregate_id, timestamp)
-VALUES(event_in::bytea, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::bytea, aggregate_id, (now() at time zone 'utc')) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
@@ -101,7 +101,7 @@ DECLARE
     inserted_id integer;
 BEGIN
     INSERT INTO events_01_goodsContainer(event, timestamp, context_state_id)
-    VALUES(event_in::bytea, now(), context_state_id) RETURNING id INTO inserted_id;
+    VALUES(event_in::bytea, (now() at time zone 'utc'), context_state_id) RETURNING id INTO inserted_id;
     return inserted_id;
 
 END;
