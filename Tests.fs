@@ -59,8 +59,8 @@ let tests =
 
     let marketInstances =
         [
-            // Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
-            Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
+            Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
+            // Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
             // Supermarket(eventStorePostgresBin, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStorePostgresBin ; 
         ]
 

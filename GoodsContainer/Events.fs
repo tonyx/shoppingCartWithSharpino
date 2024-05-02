@@ -12,7 +12,7 @@ open FsToolkit.ErrorHandling
 open ShoppingCart.GoodsContainer
 
 module GoodsContainerEvents =
-    let pickler = FsPickler.CreateJsonSerializer(indent = false)
+    // let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type GoodsContainerEvents =
         | GoodAdded of Guid
         | GoodRemoved of Guid
@@ -24,7 +24,7 @@ module GoodsContainerEvents =
                     | GoodRemoved goodRef -> goodsContainer.RemoveGood goodRef
                     | CartAdded cartRef -> goodsContainer.AddCart cartRef
 
-        static member Deserialize (serializer: ISerializer, json: 'F) =
-            globalSerializer.Deserialize<GoodsContainerEvents> json // |> Ok
-        member this.Serialize(serializer: ISerializer) =
-            globalSerializer.Serialize this
+        static member Deserialize json =
+            json |> globalSerializer.Deserialize<GoodsContainerEvents>
+        member this.Serialize  =
+            this |> globalSerializer.Serialize

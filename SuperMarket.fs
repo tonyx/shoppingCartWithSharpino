@@ -28,10 +28,10 @@ module Supermarket =
         {  notify = None
            notifyAggregate = None }
 
-    type Supermarket (eventStore: IEventStore<string>, eventBroker: IEventBroker) =
-        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, string> eventStore
-        let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStore
-        let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStore
+    type Supermarket (eventStore: IEventStore<byte[]>, eventBroker: IEventBroker) =
+        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, byte[]> eventStore
+        let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, byte[]> eventStore
+        let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, byte[]> eventStore
 
         member this.GoodRefs = 
             result {
@@ -57,7 +57,7 @@ module Supermarket =
                 let command = GoodCommands.AddQuantity  quantity
                 return! 
                     command 
-                    |> runAggregateCommand<Good, GoodEvents, string> goodRef eventStore eventBroker goodsViewer
+                    |> runAggregateCommand<Good, GoodEvents, byte[]> goodRef eventStore eventBroker goodsViewer
             }
 
         member this.GetGood (goodRef: Guid) = 
@@ -96,7 +96,7 @@ module Supermarket =
                 let! goodAdded =
                     good.Id 
                     |> AddGood 
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker goodsContainerViewer good
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, byte[]> eventStore eventBroker goodsContainerViewer good
                 return! Ok ()
             }
 
@@ -107,7 +107,7 @@ module Supermarket =
                 let command = GoodsContainerCommands.RemoveGood goodRef
                 return! 
                     command
-                    |> runCommand<GoodsContainer, GoodsContainerEvents, string> eventStore eventBroker goodsContainerViewer
+                    |> runCommand<GoodsContainer, GoodsContainerEvents, byte[]> eventStore eventBroker goodsContainerViewer
             }
 
         member this.AddCart (cart: Cart) = 
@@ -115,7 +115,7 @@ module Supermarket =
                 return! 
                     cart.Id
                     |> AddCart
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, string> eventStore eventBroker goodsContainerViewer cart
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, byte[]> eventStore eventBroker goodsContainerViewer cart
             }
 
         member this.GetCart (cartRef: Guid) = 
@@ -131,19 +131,6 @@ module Supermarket =
 
         member this.AddGoodToCart (cartRef: Guid, goodRef: Guid, quantity: int) =
             result {
-                // under comment the code as it was before ingroducing runTwoNAggregateCommands
-
-                // let! good = this.GetGood goodRef
-                // let! cart = this.GetCart cartRef
-                // let removeAQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                // let! removedFromGood = 
-                //     [removeAQuantity]
-                //     |> runNAggregateCommands<Good, GoodEvents> [goodRef] eventStore eventBroker goodsViewer
-                // let commandAddAQuantity: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
-                // let! addedToCart = 
-                //     [commandAddAQuantity]
-                //     |> runNAggregateCommands<Cart, CartEvents> [cartRef] eventStore eventBroker cartViewer
-
                 let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
                 let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
 
@@ -158,7 +145,6 @@ module Supermarket =
                         [removeQuantity] 
                         [addGood] 
                 return ()
-
             }
 
 

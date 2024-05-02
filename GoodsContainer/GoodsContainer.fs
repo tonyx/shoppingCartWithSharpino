@@ -48,7 +48,7 @@ module GoodsContainer =
         static member SnapshotsInterval = 15
         static member Lock =
             new Object()
-        static member Deserialize (serializer: ISerializer, json: 'F) =
-            globalSerializer.Deserialize<GoodsContainer> json // |> Ok
-        member this.Serialize(serializer: ISerializer) =
-            globalSerializer.Serialize this
+        static member Deserialize json = //(serializer: ISerializer, json) =
+            json |> globalSerializer.Deserialize<GoodsContainer>
+        member this.Serialize =
+            this |> globalSerializer.Serialize

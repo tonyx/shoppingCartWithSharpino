@@ -30,7 +30,6 @@ module Good =
         member this.Discounts = discounts
         member this.Quantity = quantity
 
-        [<JsonConstructor>]
         new (id: Guid, name: string, price: decimal, discounts: Discounts, mySerializer: MySerializer<string>) =
             Good (id, name, price, discounts, 0, mySerializer )
 
@@ -54,16 +53,16 @@ module Good =
         static member StorageName = "_good"
         static member Version = "_01"
         static member SnapshotsInterval = 15 
-        static member Deserialize (serializer, json) = // (serializer: ISerializer, json: 'F) =
-            globalSerializer.Deserialize json
-        member this.Serialize(serializer: ISerializer) =
+        // static member Deserialize (serializer, json)  =
+        static member Deserialize json  =
+            globalSerializer.Deserialize json 
+        member this.Serialize =
             globalSerializer.Serialize this
-            // mySerializer.Serialize this
 
-        interface Aggregate<string> with
+        interface Aggregate<byte[]> with
             member this.Id = this.Id
-            member this.Serialize (serializer: ISerializer) =
-                this.Serialize serializer
+            member this.Serialize =
+                this.Serialize 
             member this.Lock = this
             member this.StateId = this.StateId
 

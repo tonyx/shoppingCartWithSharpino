@@ -37,20 +37,15 @@ module Cart =
         static member StorageName = "_cart" 
         static member Version = "_01"
         static member SnapshotsInterval = 15
-        static member Deserialize (serializer, json) =
+        static member Deserialize json =
             globalSerializer.Deserialize<Cart> json
-            // try
-            //     pickler.UnPickleOfString<Cart> json |> Ok
-            // with 
-            // | ex -> Error ex.Message
-        member this.Serialize (serializer: ISerializer) =
+        member this.Serialize =
             globalSerializer.Serialize this
-            // pickler.PickleToString this
 
-        interface Aggregate<string> with
+        interface Aggregate<byte[]> with
             member this.Id = this.Id
-            member this.Serialize serializer =
-                this.Serialize serializer
+            member this.Serialize =
+                this.Serialize
             member this.Lock = this
             member this.StateId = this.StateId
         

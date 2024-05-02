@@ -1,6 +1,7 @@
 
 namespace ShoppingCart 
 
+open ShoppingCart.Commons  
 open System
 open Sharpino
 open Sharpino.Core
@@ -24,11 +25,8 @@ module CartEvents =
                 match this with
                 | GoodAdded (goodRef, quantity) -> cart.AddGood (goodRef, quantity)
 
-        static member Deserialize (serializer: ISerializer, json: string) =
-            try
-                pickler.UnPickleOfString<CartEvents> json |> Ok
-            with
-            | ex -> Error ex.Message
+        static member Deserialize  json =
+            globalSerializer.Deserialize<CartEvents> json // |> Ok
 
-        member this.Serialize(serializer: ISerializer) =
-            pickler.PickleToString this
+        member this.Serialize =
+            globalSerializer.Serialize this
