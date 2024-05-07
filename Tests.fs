@@ -11,6 +11,7 @@ open Sharpino.TestUtils
 open Sharpino.PgBinaryStore
 open Sharpino.MemoryStorage
 open Expecto
+open Sharpino.KafkaBroker
 
 [<Tests>]
 let tests =
@@ -37,14 +38,15 @@ let tests =
 
     // let eventStoreMemory = MemoryStorage() //:> IEventStore<string>
     // let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
-    let eventStorePostgresBin = PgBinaryStore(byteAConnection) 
+    let eventStorePostgresBin = PgBinaryStore(byteAConnection) :> IEventStore<byte[]>
+    let eventBroker = getKafkaBroker("localhost:9092")
 
     let marketInstances =
         [
             // can't use the "multiple tests" feature as there are insufficient genericity at the moment
             // Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
             // Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
-            Supermarket(eventStorePostgresBin, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStorePostgresBin ; 
+            Supermarket(eventStorePostgresBin, doNothingBroker), "eventStorePostgresBinary", fun () -> setUp eventStorePostgresBin ; 
         ]
 
     testList "samples" [
@@ -176,7 +178,7 @@ let tests =
             let addedToCart = supermarket.AddGoodToCart(cartId, Guid.NewGuid(), 1)
             Expect.isError addedToCart "should be an error" 
 
-        multipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+        fmultipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
 
             let cartId = Guid.NewGuid()

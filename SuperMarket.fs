@@ -29,7 +29,7 @@ module Supermarket =
         {  notify = None
            notifyAggregate = None }
 
-    type Supermarket (eventStore: IEventStore<'F>, eventBroker: IEventBroker<'F>) =
+    type Supermarket (eventStore: IEventStore<'F>, eventBroker: IEventBroker<_>) =
         let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, 'F> eventStore
         let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, 'F> eventStore
         let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, 'F> eventStore
