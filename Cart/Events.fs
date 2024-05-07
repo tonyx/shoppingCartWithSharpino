@@ -15,7 +15,7 @@ module CartEvents =
                 | GoodAdded (goodRef, quantity) -> cart.AddGood (goodRef, quantity)
 
         static member Deserialize  json =
-            globalSerializer.Deserialize<CartEvents> json // |> Ok
+            globalSerializer.Deserialize<CartEvents> json
 
         member this.Serialize =
             globalSerializer.Serialize this

@@ -35,8 +35,8 @@ let tests =
             "User Id=safe;"+
             "Password=safe;"
 
-    let eventStoreMemory = MemoryStorage() //:> IEventStore<string>
-    let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
+    // let eventStoreMemory = MemoryStorage() //:> IEventStore<string>
+    // let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
     let eventStorePostgresBin = PgBinaryStore(byteAConnection) 
 
     let marketInstances =
@@ -252,15 +252,6 @@ let tests =
             let result2 = supermarket.GetGoodsQuantity good2.Id
             Expect.isOk result2 "should be ok"
             Expect.equal result2.OkValue 10 "should be the same quantity"
-
-
-
-
-
-
-        
-
-
 
         multipleTestCase "add and a good and it's quantity will be zero - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()

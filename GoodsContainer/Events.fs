@@ -12,7 +12,6 @@ open FsToolkit.ErrorHandling
 open ShoppingCart.GoodsContainer
 
 module GoodsContainerEvents =
-    // let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type GoodsContainerEvents =
         | GoodAdded of Guid
         | GoodRemoved of Guid

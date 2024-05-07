@@ -13,7 +13,7 @@ module Commons =
     let jsonPickler = FsPickler.CreateJsonSerializer(indent = false)
     let binaryPickle = FsPickler.CreateBinarySerializer()
 
-    let jsonSerializer =
+    let jsonPSerializer =
         { new Serialization<string> with
             member this.Deserialize<'A> json =
                 try
@@ -36,4 +36,4 @@ module Commons =
         }
 
     let globalSerializer: Serialization<_> = binarySerializer
-    // let jsonSerializer: MySerializer<_> = jsonPicklerSerializer
+    // let jsonSerializer: Serialization<_> = jsonPSerializer
