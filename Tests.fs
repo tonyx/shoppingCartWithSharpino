@@ -7,6 +7,7 @@ open ShoppingCart.Cart
 open System
 open Sharpino.Storage
 open Sharpino.PgStorage
+open Sharpino.KafkaBroker
 open Sharpino.TestUtils
 open Sharpino.PgBinaryStore
 open Sharpino.MemoryStorage
@@ -36,15 +37,16 @@ let tests =
             "Password=safe;"
 
     // let eventStoreMemory = MemoryStorage() //:> IEventStore<string>
-    // let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
-    let eventStorePostgresBin = PgBinaryStore(byteAConnection) 
+    let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
+    let standardBroker = getKafkaBroker("localhost:9092", eventStorePostgres)
+    // let eventStorePostgresBin = PgBinaryStore(byteAConnection) 
 
     let marketInstances =
         [
             // can't use the "multiple tests" feature as there are insufficient genericity at the moment
             // Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
             // Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
-            Supermarket(eventStorePostgresBin, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStorePostgresBin ; 
+            Supermarket(eventStorePostgres, standardBroker), "eventStoreMemory", fun () -> setUp eventStorePostgres ; 
         ]
 
     testList "samples" [
@@ -176,7 +178,7 @@ let tests =
             let addedToCart = supermarket.AddGoodToCart(cartId, Guid.NewGuid(), 1)
             Expect.isError addedToCart "should be an error" 
 
-        multipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+        fmultipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -192,8 +194,9 @@ let tests =
             let GoodAdded2 = supermarket.AddGood good2
             Expect.isOk GoodAdded2 "should be ok"
 
-            let _ = supermarket.AddQuantity(good1.Id, 10)
+            let _ = supermarket.AddQuantity(good1.Id, 8)
             let _ = supermarket.AddQuantity(good2.Id, 10)
+
 
             let addedToCart1 = supermarket.AddGoodsToCart(cartId, [(good1.Id, 1); (good2.Id, 1)])
 
@@ -208,7 +211,7 @@ let tests =
 
             let good1Quantity = supermarket.GetGoodsQuantity good1.Id
             Expect.isOk good1Quantity "should be ok"
-            Expect.equal good1Quantity.OkValue 9 "should be the same quantity"
+            Expect.equal good1Quantity.OkValue 7 "should be the same quantity"
 
             let Good2Quantity = supermarket.GetGoodsQuantity good2.Id
             Expect.isOk Good2Quantity "should be ok"

@@ -34,7 +34,7 @@ module Cart =
         member this.Serialize =
             globalSerializer.Serialize this
 
-        interface Aggregate<byte[]> with
+        interface Aggregate<string> with
             member this.Id = this.Id
             member this.Serialize =
                 this.Serialize

@@ -3,7 +3,7 @@
 CREATE TABLE public.events_01_good (
                                           id integer NOT NULL,
                                           aggregate_id uuid NOT NULL,
-                                          event bytea NOT NULL,
+                                          event string NOT NULL,
                                           published boolean NOT NULL DEFAULT false,
                                           kafkaoffset BIGINT,
                                           kafkapartition INTEGER,
@@ -28,7 +28,7 @@ CREATE SEQUENCE public.snapshots_01_good_id_seq
 
 CREATE TABLE public.snapshots_01_good (
                                              id integer DEFAULT nextval('public.snapshots_01_good_id_seq'::regclass) NOT NULL,
-                                             snapshot bytea NOT NULL,
+                                             snapshot string NOT NULL,
                                              event_id integer, -- the initial snapshot has no event_id associated so it can be null
                                              aggregate_id uuid NOT NULL,
                                              aggregate_state_id uuid,
@@ -65,7 +65,7 @@ ALTER TABLE ONLY public.aggregate_events_01_good
     ADD CONSTRAINT aggregate_events_01_fk  FOREIGN KEY (event_id) REFERENCES public.events_01_good (id) MATCH FULL ON DELETE CASCADE;
 
 CREATE OR REPLACE FUNCTION insert_01_good_event_and_return_id(
-    IN event_in bytea,
+    IN event_in string,
     IN aggregate_id uuid,
     IN aggregate_state_id uuid
 )
@@ -77,13 +77,13 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_good(event, aggregate_id, timestamp)
-VALUES(event_in::bytea, aggregate_id, (now() at time zone 'utc')) RETURNING id INTO inserted_id;
+VALUES(event_in::string, aggregate_id, now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION insert_01_good_aggregate_event_and_return_id(
-    IN event_in bytea,
+    IN event_in string,
     IN aggregate_id uuid, 
     in aggregate_state_id uuid
 )
