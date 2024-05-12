@@ -38,8 +38,6 @@ module GoodsContainer =
         static member StorageName = "_goodsContainer"
         static member Version = "_01"
         static member SnapshotsInterval = 15
-        static member Lock =
-            new Object()
         static member Deserialize x = //(serializer: ISerializer, json) =
             x |> globalSerializer.Deserialize<GoodsContainer>
         member this.Serialize =
