@@ -12,6 +12,7 @@ open Sharpino.PgBinaryStore
 open Sharpino.MemoryStorage
 open Expecto
 open Sharpino.KafkaBroker
+open Sharpino.Cache
 
 [<Tests>]
 let tests =
@@ -23,6 +24,10 @@ let tests =
 
         eventStore.Reset Cart.Version Cart.StorageName
         eventStore.ResetAggregateStream Cart.Version Cart.StorageName
+
+        AggregateCache<Cart, byte[]>.Instance.Clear()
+        AggregateCache<Good, byte[]>.Instance.Clear()
+        StateCache<GoodsContainer>.Instance.Clear()
 
     let connection = 
             "Server=127.0.0.1;" +
@@ -178,7 +183,7 @@ let tests =
             let addedToCart = supermarket.AddGoodToCart(cartId, Guid.NewGuid(), 1)
             Expect.isError addedToCart "should be an error" 
 
-        fmultipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+        multipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
 
             let cartId = Guid.NewGuid()
