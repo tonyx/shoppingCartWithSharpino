@@ -131,8 +131,7 @@ module Supermarket =
             result {
                 let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
                 let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
-
-                let! moveFromGoodToCart =
+                return! 
                     runTwoNAggregateCommands 
                         [goodId]
                         [cartId] 
@@ -142,7 +141,6 @@ module Supermarket =
                         cartViewer
                         [removeQuantity] 
                         [addGood] 
-                return ()
             }
 
         member this.AddGoodsToCart (cartId: Guid, goods: (Guid * int) list) =
@@ -162,7 +160,7 @@ module Supermarket =
                 let cartids =
                     [1..size] |>> (fun _ -> cartId)
                 
-                let! moveFromGoodToCart =
+                return!
                     runTwoNAggregateCommands 
                         goodIds
                         cartids
@@ -172,8 +170,6 @@ module Supermarket =
                         cartViewer
                         commandRemove
                         commandAdd
-                
-                return ()
             }
 
 

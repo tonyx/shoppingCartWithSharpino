@@ -41,6 +41,3 @@ module Cart =
             member this.Lock = this
             member this.StateId = this.StateId
         
-
-
-
