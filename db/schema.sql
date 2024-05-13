@@ -17,91 +17,97 @@ SET row_security = off;
 
 
 --
--- Name: insert_01_cart_aggregate_event_and_return_id(bytea, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_cart_aggregate_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_cart_aggregate_event_and_return_id(event_in bytea, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_cart_aggregate_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
 inserted_id integer;
     event_id integer;
 BEGIN
-    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    -- event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
 
-INSERT INTO aggregate_events_01_cart(aggregate_id, event_id, aggregate_state_id )
-VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
+-- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
 return event_id;
 END;
 $$;
 
 
 --
--- Name: insert_01_cart_event_and_return_id(bytea, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_cart_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_cart_event_and_return_id(event_in bytea, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_cart_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_cart(event, aggregate_id, timestamp)
-VALUES(event_in::bytea, aggregate_id, (now() at time zone 'utc')) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
 
 
 --
--- Name: insert_01_good_aggregate_event_and_return_id(bytea, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_good_aggregate_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_good_aggregate_event_and_return_id(event_in bytea, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_good_aggregate_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
 inserted_id integer;
     event_id integer;
 BEGIN
-    event_id := insert_01_good_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    event_id := insert_01_good_event_and_return_id(event_in, aggregate_id);
 
-INSERT INTO aggregate_events_01_good(aggregate_id, event_id, aggregate_state_id )
-VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+-- INSERT INTO aggregate_events_01_good(aggregate_id, event_id, aggregate_state_id )
+-- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+
+INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
+
 return event_id;
 END;
 $$;
 
 
 --
--- Name: insert_01_good_event_and_return_id(bytea, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_good_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_good_event_and_return_id(event_in bytea, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_good_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_good(event, aggregate_id, timestamp)
-VALUES(event_in::bytea, aggregate_id, (now() at time zone 'utc')) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
 
 
 --
--- Name: insert_01_goodscontainer_event_and_return_id(bytea, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_goodscontainer_event_and_return_id(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_goodscontainer_event_and_return_id(event_in bytea, context_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_goodscontainer_event_and_return_id(event_in text) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
     inserted_id integer;
 BEGIN
-    INSERT INTO events_01_goodsContainer(event, timestamp, context_state_id)
-    VALUES(event_in::bytea, (now() at time zone 'utc'), context_state_id) RETURNING id INTO inserted_id;
+    INSERT INTO events_01_goodsContainer(event, timestamp)
+    VALUES(event_in::text, now()) RETURNING id INTO inserted_id;
     return inserted_id;
 
 END;
@@ -259,10 +265,8 @@ CREATE TABLE public.aggregate_events_01_good (
 CREATE TABLE public.events_01_cart (
     id integer NOT NULL,
     aggregate_id uuid NOT NULL,
-    event bytea NOT NULL,
+    event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    kafkaoffset bigint,
-    kafkapartition integer,
     "timestamp" timestamp without time zone NOT NULL
 );
 
@@ -288,10 +292,8 @@ ALTER TABLE public.events_01_cart ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTI
 CREATE TABLE public.events_01_good (
     id integer NOT NULL,
     aggregate_id uuid NOT NULL,
-    event bytea NOT NULL,
+    event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    kafkaoffset bigint,
-    kafkapartition integer,
     "timestamp" timestamp without time zone NOT NULL
 );
 
@@ -316,11 +318,9 @@ ALTER TABLE public.events_01_good ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTI
 
 CREATE TABLE public.events_01_goodscontainer (
     id integer NOT NULL,
-    event bytea NOT NULL,
+    event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    kafkaoffset bigint,
-    kafkapartition integer,
-    context_state_id uuid NOT NULL,
+    context_state_id uuid,
     "timestamp" timestamp without time zone NOT NULL
 );
 
@@ -366,7 +366,7 @@ CREATE SEQUENCE public.snapshots_01_cart_id_seq
 
 CREATE TABLE public.snapshots_01_cart (
     id integer DEFAULT nextval('public.snapshots_01_cart_id_seq'::regclass) NOT NULL,
-    snapshot bytea NOT NULL,
+    snapshot text NOT NULL,
     event_id integer,
     aggregate_id uuid NOT NULL,
     aggregate_state_id uuid,
@@ -392,7 +392,7 @@ CREATE SEQUENCE public.snapshots_01_good_id_seq
 
 CREATE TABLE public.snapshots_01_good (
     id integer DEFAULT nextval('public.snapshots_01_good_id_seq'::regclass) NOT NULL,
-    snapshot bytea NOT NULL,
+    snapshot text NOT NULL,
     event_id integer,
     aggregate_id uuid NOT NULL,
     aggregate_state_id uuid,
@@ -418,7 +418,7 @@ CREATE SEQUENCE public.snapshots_01_goodscontainer_id_seq
 
 CREATE TABLE public.snapshots_01_goodscontainer (
     id integer DEFAULT nextval('public.snapshots_01_goodscontainer_id_seq'::regclass) NOT NULL,
-    snapshot bytea NOT NULL,
+    snapshot text NOT NULL,
     event_id integer NOT NULL,
     "timestamp" timestamp without time zone NOT NULL
 );

@@ -3,10 +3,12 @@
 CREATE TABLE public.events_01_cart (
                                           id integer NOT NULL,
                                           aggregate_id uuid NOT NULL,
-                                          event string NOT NULL,
+                                          event text NOT NULL,
                                           published boolean NOT NULL DEFAULT false,
-                                          kafkaoffset BIGINT,
-                                          kafkapartition INTEGER,
+
+                                        --   kafkaoffset BIGINT,
+                                        --   kafkapartition INTEGER,
+
                                           "timestamp" timestamp without time zone NOT NULL
 );
 
@@ -28,7 +30,7 @@ CREATE SEQUENCE public.snapshots_01_cart_id_seq
 
 CREATE TABLE public.snapshots_01_cart (
                                              id integer DEFAULT nextval('public.snapshots_01_cart_id_seq'::regclass) NOT NULL,
-                                             snapshot string NOT NULL,
+                                             snapshot text NOT NULL,
                                              event_id integer, -- the initial snapshot has no event_id associated so it can be null
                                              aggregate_id uuid NOT NULL,
                                              aggregate_state_id uuid,
@@ -65,9 +67,9 @@ ALTER TABLE ONLY public.aggregate_events_01_cart
     ADD CONSTRAINT aggregate_events_01_fk  FOREIGN KEY (event_id) REFERENCES public.events_01_cart (id) MATCH FULL ON DELETE CASCADE;
 
 CREATE OR REPLACE FUNCTION insert_01_cart_event_and_return_id(
-    IN event_in string,
-    IN aggregate_id uuid,
-    IN aggregate_state_id uuid
+    IN event_in text,
+    IN aggregate_id uuid
+    -- IN aggregate_state_id uuid
 )
 RETURNS int
        
@@ -77,15 +79,15 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_cart(event, aggregate_id, timestamp)
-VALUES(event_in::string, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION insert_01_cart_aggregate_event_and_return_id(
-    IN event_in string,
-    IN aggregate_id uuid, 
-    in aggregate_state_id uuid
+    IN event_in text,
+    IN aggregate_id uuid 
+    -- in aggregate_state_id uuid
 )
 RETURNS int
     
@@ -95,10 +97,12 @@ DECLARE
 inserted_id integer;
     event_id integer;
 BEGIN
-    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    -- event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
 
-INSERT INTO aggregate_events_01_cart(aggregate_id, event_id, aggregate_state_id )
-VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
+-- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
 return event_id;
 END;
 $$;

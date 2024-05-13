@@ -37,7 +37,7 @@ let getFromMessage<'E> value =
 
 [<Tests>]
 let kafkaTests =
-    testList "Supermarket" [
+    ptestList "Supermarket" [
         multipleTestCase "add a good to a cart, and verify events are published on the cart and on the good side - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
 
@@ -142,7 +142,7 @@ let kafkaTests =
 
             Expect.equal actual expected "should be the same event"
 
-        fmultipleTestCase "add two goods into a card - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+        multipleTestCase "add two goods into a card - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
 
             setup ()
 
@@ -193,7 +193,7 @@ let kafkaTests =
             let actuals = cartConsumer.GetEvents |> Result.get |> Set.ofList
             Expect.equal expecteds actuals "should be the same events"
 
-        fmultipleTestCase "add one good twice and another good once, get related events by the consumer - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+        multipleTestCase "add one good twice and another good once, get related events by the consumer - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
 
             setup ()
 
@@ -234,7 +234,7 @@ let kafkaTests =
             let actual2 = consumer.GetEventsByAggregate good2Id |> Result.get
             Expect.equal actual2 expected2 "should be the same events"
 
-        fmultipleTestCase "add one good twice and another good once, get related events by the consumer. Compute the evolve - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+        multipleTestCase "add one good twice and another good once, get related events by the consumer. Compute the evolve - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
 
             setup ()
 
