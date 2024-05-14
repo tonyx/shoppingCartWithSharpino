@@ -35,5 +35,5 @@ module Commons =
                 binaryPickle.Pickle obj
         }
 
-    let globalSerializer: Serialization<_> = binarySerializer
-    // let jsonSerializer: Serialization<_> = jsonPSerializer
+    // let globalSerializer: Serialization<_> = binarySerializer
+    let globalSerializer: Serialization<_> = jsonPSerializer

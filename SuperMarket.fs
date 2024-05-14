@@ -36,19 +36,19 @@ module Supermarket =
 
         member this.GoodRefs = 
             result {
-                let! (_, state, _ , _) = goodsContainerViewer ()
+                let! (_, state) = goodsContainerViewer ()
                 return state.GoodRefs
             }
         member this.CartRefs =
             result {
-                let! (_, state, _, _) = goodsContainerViewer ()
+                let! (_, state) = goodsContainerViewer ()
                 return state.CartRefs
             }
 
         member this.GetGoodsQuantity (goodId: Guid) = 
             result {
                 let! esists = this.GetGood goodId
-                let! (_, state, _, _) = goodsViewer goodId
+                let! (_, state) = goodsViewer goodId
                 return state.Quantity
             }
 
@@ -57,7 +57,7 @@ module Supermarket =
                 return! 
                     quantity
                     |> AddQuantity
-                    |> runAggregateCommand<Good, GoodEvents, 'F> goodId eventStore eventBroker goodsViewer
+                    |> runAggregateCommand<Good, GoodEvents, 'F> goodId eventStore eventBroker
             }
 
         member this.GetGood (id: Guid) = 
@@ -67,12 +67,12 @@ module Supermarket =
                     goods
                     |> List.tryFind (fun g -> g = id)
                     |> Result.ofOption "Good not found"
-                let! (_, state, _, _) = goodsViewer id
+                let! (_, state) = goodsViewer id
                 return state
             }
         member this.Goods =
             result {
-                let! (_, state, _, _) = goodsContainerViewer ()
+                let! (_, state) = goodsContainerViewer ()
 
                 // warning: if there is a ref to an unexisting good you are in trouble. fix it
                 let! goods =
@@ -96,7 +96,7 @@ module Supermarket =
                 let! goodAdded =
                     good.Id 
                     |> AddGood 
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker goodsContainerViewer good
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker good
                 return! Ok ()
             }
 
@@ -105,7 +105,7 @@ module Supermarket =
                 return! 
                     id
                     |> RemoveGood
-                    |> runCommand<GoodsContainer, GoodsContainerEvents, 'F> eventStore eventBroker goodsContainerViewer
+                    |> runCommand<GoodsContainer, GoodsContainerEvents, 'F> eventStore eventBroker
             }
 
         member this.AddCart (cart: Cart) = 
@@ -113,7 +113,7 @@ module Supermarket =
                 return! 
                     cart.Id
                     |> AddCart
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, 'F> eventStore eventBroker goodsContainerViewer cart
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, 'F> eventStore eventBroker cart
             }
 
         member this.GetCart (cartRef: Guid) = 
@@ -123,7 +123,7 @@ module Supermarket =
                     cartRefs
                     |> List.tryFind (fun c -> c = cartRef)
                     |> Result.ofOption "Cart not found"
-                let! (_, state, _, _) = cartViewer cartRef
+                let! (_, state) = cartViewer cartRef
                 return state
             }
 
@@ -131,18 +131,14 @@ module Supermarket =
             result {
                 let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
                 let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
-
-                let! moveFromGoodToCart =
+                return! 
                     runTwoNAggregateCommands 
                         [goodId]
                         [cartId] 
                         eventStore 
                         eventBroker 
-                        goodsViewer 
-                        cartViewer
                         [removeQuantity] 
                         [addGood] 
-                return ()
             }
 
         member this.AddGoodsToCart (cartId: Guid, goods: (Guid * int) list) =
@@ -162,18 +158,14 @@ module Supermarket =
                 let cartids =
                     [1..size] |>> (fun _ -> cartId)
                 
-                let! moveFromGoodToCart =
+                return!
                     runTwoNAggregateCommands 
                         goodIds
                         cartids
                         eventStore 
                         eventBroker 
-                        goodsViewer 
-                        cartViewer
                         commandRemove
                         commandAdd
-                
-                return ()
             }
 
 

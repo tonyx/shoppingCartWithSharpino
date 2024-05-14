@@ -25,7 +25,13 @@ module Good =
             Good (id, name, price, discounts, 0 )
 
         member this.SetPrice (price: decimal) =
-            Good (this.Id, this.Name, price, this.Discounts, quantity) |> Ok
+            result {
+                do! 
+                    price > 0
+                    |> Result.ofBool "Price must be greater than 0"
+                let result = Good (this.Id, this.Name, price, this.Discounts, quantity) 
+                return result
+            }
 
         member this.ChangeDiscounts(discounts: Discounts) =
             Good (this.Id, this.Name, this.Price, discounts, quantity ) |> Ok
@@ -49,10 +55,10 @@ module Good =
         member this.Serialize =
             globalSerializer.Serialize this
 
-        interface Aggregate<byte[]> with
+        interface Aggregate<string> with
             member this.Id = this.Id
             member this.Serialize =
                 this.Serialize 
-            member this.Lock = this
-            member this.StateId = this.StateId
+            // member this.Lock = this
+            // member this.StateId = this.StateId
 
