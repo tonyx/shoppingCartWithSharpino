@@ -17,7 +17,7 @@ open Sharpino.PgBinaryStore
 open Sharpino.MemoryStorage
 open Expecto
 open Confluent.Kafka
-open FsKafka
+// open FsKafka
 open Tests
 open ShoppingCart.CartEvents
 open ShoppingCart.GoodEvents

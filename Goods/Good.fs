@@ -59,6 +59,4 @@ module Good =
             member this.Id = this.Id
             member this.Serialize =
                 this.Serialize 
-            // member this.Lock = this
-            // member this.StateId = this.StateId
 

@@ -26,17 +26,22 @@
 
   <ItemGroup>
     <PackageReference Include="Expecto" Version="10.2.1" />
-    <!-- <PackageReference Include="Sharpino" Version="2.1.2" /> -->
-    <!-- <PackageReference Include="Expecto" Version="10.2.1" /> -->
+    <PackageReference Include="fsKafka" Version="1.9.2" />
+    <PackageReference Include="Sharpino" Version="2.2.0" />
     <PackageReference Include="librdkafka.redist" Version="2.4.0" />
     <PackageReference Include="Sharpino" Version="2.1.0" />
     <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Update="FSharp.Core" Version="8.*" />
+    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Confluent.Kafka" Version="2.4.0" />
+    <PackageReference Include="librdkafka.redist" Version="2.4.0" />
+    <PackageReference Include="MinVer" Version="5.0.0" PrivateAssets="All" />
+    <!-- <PackageReference Include="Expecto" Version="10.2.1" /> -->
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- <ItemGroup>
     <ProjectReference Include="..\..\realsharpino\Sharpino\Sharpino.Lib\Sharpino.Lib.fsproj" />
-  </ItemGroup>
+  </ItemGroup> -->
 
 </Project>
