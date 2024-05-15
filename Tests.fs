@@ -14,6 +14,9 @@ open Sharpino.MemoryStorage
 open Expecto
 open Sharpino.KafkaBroker
 open Sharpino.Cache
+open Sharpino.CommandHandler
+open ShoppingCart.CartEvents
+open ShoppingCart.GoodEvents
 
 let setUp (eventStore: IEventStore<'F>) =
     eventStore.Reset GoodsContainer.Version GoodsContainer.StorageName
@@ -43,54 +46,20 @@ let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
 let standardBroker = getKafkaBroker("localhost:9092")
 // let eventStorePostgresBin = PgBinaryStore(byteAConnection) 
 
+let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, 'F> eventStorePostgres
+let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, 'F> eventStorePostgres
+
 let marketInstances =
     [
         // can't use the "multiple tests" feature as there are insufficient genericity at the moment
-        // Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
+        Supermarket(eventStorePostgres, doNothingBroker, goodsViewer, cartViewer), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
         // Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
-        Supermarket(eventStorePostgres, standardBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ; 
+        // Supermarket(eventStorePostgresBin, doNothingBroker), "eventStorePostgresBinary", fun () -> setUp eventStorePostgresBin ; 
     ]
 [<Tests>]
 let tests =
 
-    let setUp (eventStore: IEventStore<'F>) =
-        eventStore.Reset GoodsContainer.Version GoodsContainer.StorageName
-        eventStore.Reset Good.Version Good.StorageName
-        eventStore.ResetAggregateStream Good.Version Good.StorageName
-
-        eventStore.Reset Cart.Version Cart.StorageName
-        eventStore.ResetAggregateStream Cart.Version Cart.StorageName
-
-        AggregateCache<Cart, string>.Instance.Clear()
-        AggregateCache<Good, string>.Instance.Clear()
-        StateCache<GoodsContainer>.Instance.Clear()
-
-    let connection = 
-            "Server=127.0.0.1;" +
-            "Database=es_shopping_cart;" +
-            "User Id=safe;"+
-            "Password=safe;"
-
-    let byteAConnection =
-            "Server=127.0.0.1;" +
-            "Database=es_shopping_cart_bin;" +
-            "User Id=safe;"+
-            "Password=safe;"
-
-    // let eventStoreMemory = MemoryStorage() //:> IEventStore<string>
-    // let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
-    let eventStorePostgresBin = PgBinaryStore(byteAConnection) :> IEventStore<byte[]>
-    let eventBroker = getKafkaBroker("localhost:9092")
-
-    let marketInstances =
-        [
-            // can't use the "multiple tests" feature as there are insufficient genericity at the moment
-            Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", fun () -> setUp eventStorePostgres ;
-            // Supermarket(eventStoreMemory, doNothingBroker), "eventStoreMemory", fun () -> setUp eventStoreMemory; 
-            // Supermarket(eventStorePostgresBin, doNothingBroker), "eventStorePostgresBinary", fun () -> setUp eventStorePostgresBin ; 
-        ]
-
-    testList "samples" [
+    ftestList "samples" [
 
         multipleTestCase "there are no good in a Supermarket" marketInstances <| fun (supermarket, eventStore, setup ) ->
             setup()
