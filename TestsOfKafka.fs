@@ -2,6 +2,7 @@
 module KafkaTests
 
 open ShoppingCart.Good
+open Confluent.Kafka.Admin
 open ShoppingCart.Commons
 open ShoppingCart.GoodsContainer
 open ShoppingCart.Supermarket
@@ -22,6 +23,8 @@ open Tests
 open ShoppingCart.CartEvents
 open ShoppingCart.GoodEvents
 open FsToolkit.ErrorHandling
+open FsKafka
+open Sharpino.CommandHandler
 
 
 let getFromMessage<'E> value =
@@ -35,11 +38,44 @@ let getFromMessage<'E> value =
         return actual
     }
 
+let tryDeleteTopic (cliAdmin: IAdminClient) topicName =
+    try
+        cliAdmin.DeleteTopicsAsync([topicName]) |> Async.AwaitTask  |> Async.RunSynchronously
+    with
+    | _ -> 
+        printf "not deleted because does not exist\n"
+        ()
+
+let topicSetup () =
+    let config = new AdminClientConfig()
+    config.BootstrapServers <- "localhost:9092"
+    let adminClient = new AdminClientBuilder(config)
+    let cliAdmin = adminClient.Build()
+    let delete = tryDeleteTopic cliAdmin "good-01"
+    printf "topics deleted %A\n" delete
+
+    let delete2 =  tryDeleteTopic cliAdmin "cart-01"
+    printf "topics deleted %A\n" delete2
+
+    let delete3 = tryDeleteTopic cliAdmin "goodsContainer-01"
+    printf "topics deleted %A\n" delete3
+
+    let log = Serilog.LoggerConfiguration().CreateLogger()
+    let batching = Batching.Linger (System.TimeSpan.FromMilliseconds 10.)
+    let producerConfig = KafkaProducerConfig.Create("MyClientIdX", "localhost:9092", Acks.All, batching)
+    let createFirstTopic = KafkaProducer.Create(log, producerConfig, "good-01")
+    let createSecondTopic = KafkaProducer.Create(log, producerConfig, "cart-01")
+    let createThirdTopic = KafkaProducer.Create(log, producerConfig, "goodsContainer-01")
+    ()
+
 [<Tests>]
 let kafkaTests =
-    ptestList "Supermarket" [
+    testList "Supermarket" [
         multipleTestCase "add a good to a cart, and verify events are published on the cart and on the good side - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+            let storageCartStateViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStorePostgres
 
             let cartId = Guid.NewGuid()
             printf "cart id1: %A \n" cartId
@@ -71,13 +107,12 @@ let kafkaTests =
             let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
             printf "topic %s\n" topic
 
-            let goodConsumer = ConsumerX<Good, GoodEvents>([good1], topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000)
+
+            let goodConsumer = ConsumerX<Good, GoodEvents>(topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, storageGoodStateViewer)
             
             goodConsumer.Consuming()
 
             let binaryDecoded = getStrAggregateMessage goodConsumer.GMessages.[0].Message.Value
-
-            // let okBinaryDecoded = goodConsumer.GetProcessedMessages |> Result.get |> List.head
 
             Expect.isOk binaryDecoded "should be ok"
             let okBinaryDecoded = binaryDecoded.OkValue
@@ -87,7 +122,7 @@ let kafkaTests =
             Expect.equal binaryDecodeds.[0].AggregateId good1.Id "should be the same id"
 
             let cartTopic = (Cart.StorageName + "-" + Cart.Version).Replace("_", "")
-            let cartConsumer = ConsumerX<Cart, CartEvents>([iniCart], cartTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000)
+            let cartConsumer = ConsumerX<Cart, CartEvents>(cartTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, storageCartStateViewer)
 
             cartConsumer.Consuming()
 
@@ -98,6 +133,9 @@ let kafkaTests =
 
         multipleTestCase "add a good to a cart and  decript the events - Ok"  marketInstances <| fun (supermarket, eventStore, setup) ->
             setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+            let storageCartStateViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStorePostgres
             
             // prepare the good adding it to the cart
             let cartId = Guid.NewGuid ()
@@ -117,7 +155,7 @@ let kafkaTests =
 
             // now verify that the events are published on the good and cart side
             let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
-            let goodConsumer = ConsumerX<Good, GoodEvents>([good1], topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000)
+            let goodConsumer = ConsumerX<Good, GoodEvents>(topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, storageGoodStateViewer)
 
             goodConsumer.Consuming()
 
@@ -128,11 +166,10 @@ let kafkaTests =
 
             let expected = Set.ofList [expected; expected2]
 
-
             Expect.equal actualGoodEvents expected "should be the same event"
 
             let cartTopic = (Cart.StorageName + "-" + Cart.Version).Replace("_", "")
-            let cartConsumer = ConsumerX<Cart, CartEvents> ([cart], cartTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000)
+            let cartConsumer = ConsumerX<Cart, CartEvents> (cartTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, storageCartStateViewer)
 
             cartConsumer.Consuming()
 
@@ -145,6 +182,9 @@ let kafkaTests =
         multipleTestCase "add two goods into a card - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
 
             setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+            let storageCartStateViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStorePostgres
 
             let cartId = Guid.NewGuid ()
             let cart = Cart (cartId, Map.empty)
@@ -170,7 +210,7 @@ let kafkaTests =
 
             let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
 
-            let consumer = ConsumerX<Good, GoodEvents> ([good1], topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000)
+            let consumer = ConsumerX<Good, GoodEvents> (topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, storageGoodStateViewer)
             consumer.Consuming()
 
             let actuals = consumer.GetEvents |> Result.get |> Set.ofList
@@ -183,7 +223,7 @@ let kafkaTests =
             Expect.equal actuals expected "should be the same events"
 
             let cartTopic = (Cart.StorageName + "-" + Cart.Version).Replace("_", "")
-            let cartConsumer = ConsumerX<Cart, CartEvents> ([cart], cartTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000)
+            let cartConsumer = ConsumerX<Cart, CartEvents> (cartTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, storageCartStateViewer)
             cartConsumer.Consuming()
 
             let expected1 = CartEvents.GoodAdded (good1.Id, 2)
@@ -196,6 +236,9 @@ let kafkaTests =
         multipleTestCase "add one good twice and another good once, get related events by the consumer - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
 
             setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+            let storageCartStateViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStorePostgres
 
             let cartId = Guid.NewGuid ()
             let cart = Cart (cartId, Map.empty)
@@ -225,7 +268,7 @@ let kafkaTests =
             let expected2 = [GoodEvents.QuantityAdded 5]
 
             let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
-            let consumer = ConsumerX<Good, GoodEvents> ([good1], topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000)
+            let consumer = ConsumerX<Good, GoodEvents> (topic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 7000, storageGoodStateViewer)
 
             consumer.Consuming()
 
@@ -237,6 +280,9 @@ let kafkaTests =
         multipleTestCase "add one good twice and another good once, get related events by the consumer. Compute the evolve - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
 
             setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+            let storageCartStateViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStorePostgres
 
             let cartId = Guid.NewGuid ()
             let cart = Cart (cartId, Map.empty)
@@ -262,10 +308,14 @@ let kafkaTests =
             let addToSupermarket13 = supermarket.AddQuantity (good1.Id, 17)
             Expect.isOk addToSupermarket13 "should be ok"
 
+            let addToSupermarket21 = supermarket.AddQuantity (good2.Id, 5)
+            let addToSupermarket22 = supermarket.AddQuantity (good2.Id, 10)
+
             let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
-            let consumer = ConsumerX<Good, GoodEvents> ([good1], topic, "MyClientIdQ", "localhost:9092", "MyGroupIdQ", 4000)
+            let consumer = ConsumerX<Good, GoodEvents> (topic, "MyClientIdQ", "localhost:9092", "MyGroupIdQ", 7000, storageGoodStateViewer)
 
             let expected1 = [GoodEvents.QuantityAdded 9; GoodEvents.QuantityAdded 11; GoodEvents.QuantityAdded 17]
+            let expected2 = [GoodEvents.QuantityAdded 5; GoodEvents.QuantityAdded 10]
 
             consumer.Consuming()
 
@@ -275,6 +325,103 @@ let kafkaTests =
             let good1State = actual1 |> evolve good1 |> Result.get
             let actualGood1State = supermarket.GetGood good1Id |> Result.get
             Expect.equal good1State.Quantity actualGood1State.Quantity "should be the same state"
+
+            let actual2 = consumer.GetEventsByAggregate good2Id |> Result.get
+            Expect.equal actual2 expected2 "should be the same events"
+            let good2State = actual2 |> evolve good2 |> Result.get
+            let actualGood2State = supermarket.GetGood good2Id |> Result.get
+            Expect.equal good2State.Quantity actualGood2State.Quantity "should be the same state"
+
+        multipleTestCase "initial state when no events are issued is the one provided by the backup state viewer - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+
+            setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+
+            let good1Id = Guid.NewGuid()
+            let good1 = Good (good1Id, "Good1", 10.0m, [])
+
+            let GoodAdded = supermarket.AddGood good1
+
+            let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
+            let consumer = ConsumerX<Good, GoodEvents> (topic, "MyClientIdQ", "localhost:9092", "MyGroupIdQ", 7000, storageGoodStateViewer)
+
+            let result = consumer.GetState good1Id |> Result.get |> snd
+            Expect.equal result good1 "should be the same state"
+
+        // WORK IN PROGRESS
+        multipleTestCase "initial state. the number of items is zero - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+
+            setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+
+            let good1Id = Guid.NewGuid()
+            let good1 = Good (good1Id, "Good1", 10.0m, [])
+
+            let GoodAdded = supermarket.AddGood good1
+
+            let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
+            let consumer = ConsumerX<Good, GoodEvents> (topic, "MyClientIdQ", "localhost:9092", "MyGroupIdQ", 7000, storageGoodStateViewer)
+
+            let result = consumer.GetState good1Id |> Result.get |> snd
+            Expect.equal result.Quantity 0 "should be the same state"
+
+        multipleTestCase "Initial state.  Add a quanty. Verify that the quantity retrieved by consumer changed accordingly - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+
+            setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+
+            let good1Id = Guid.NewGuid()
+            let good1 = Good (good1Id, "Good1", 10.0m, [])
+            let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
+
+            let consumer = ConsumerX<Good, GoodEvents> (topic, "MyClientIdQ", "localhost:9092", "MyGroupIdQ", 7000, storageGoodStateViewer)
+            let GoodAdded = supermarket.AddGood good1
+            let result = consumer.GetState good1Id |> Result.get |> snd
+            Expect.equal result.Quantity 0 "should be the same state"
+
+            consumer.Update()
+
+            let quantityAdded = supermarket.AddQuantity (good1Id, 10)
+
+            let result2 = consumer.GetState good1Id |> Result.get |> snd
+            Expect.equal result2.Quantity 10 "should be the same state"
+
+        fmultipleTestCase "Initial state.  Add a quanty. Verify that the quantity retrieved by consumer changed accordingly, then add quantities twice and verify - Ok" marketInstances <| fun (supermarket, eventStore, setup) ->
+
+            setup ()
+            topicSetup ()
+            let storageGoodStateViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStorePostgres
+
+            let good1Id = Guid.NewGuid()
+            let good1 = Good (good1Id, "Good1", 10.0m, [])
+            let topic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
+
+            let consumer = ConsumerX<Good, GoodEvents> (topic, "MyClientIdQ", "localhost:9092", "MyGroupIdQ", 15000, storageGoodStateViewer)
+            let GoodAdded = supermarket.AddGood good1
+            let result = consumer.GetState good1Id |> Result.get |> snd
+            Expect.equal result.Quantity 0 "should be the same state"
+
+            consumer.Update()
+
+            let quantityAdded = supermarket.AddQuantity (good1Id, 10)
+
+            Async.Sleep 1000 |> Async.RunSynchronously
+
+            let result2 = consumer.GetState good1Id |> Result.get |> snd
+            Expect.equal result2.Quantity 10 "should be the same state"
+
+            let quantityAdded2 = supermarket.AddQuantity (good1Id, 5)
+            let quantityAdded3 = supermarket.AddQuantity (good1Id, 7)
+            consumer.Update()
+
+            let quantityAdded4 = supermarket.AddQuantity (good1Id, 10)
+            consumer.Update()
+
+            let result3 = consumer.GetState good1Id |> Result.get |> snd
+            Expect.equal result3.Quantity 32 "should be the same state"
 
     ]
     |> testSequenced

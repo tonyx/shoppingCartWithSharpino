@@ -13,8 +13,6 @@ module Good =
     type Discounts = List<Discount>
 
     type Good private (id: Guid, name: string, price: decimal, discounts: Discounts, quantity: int) =
-        let stateId = Guid.NewGuid()
-        member this.StateId = stateId
         member this.Id = id
         member this.Name = name
         member this.Price = price
@@ -46,6 +44,19 @@ module Good =
                     |> Result.ofBool "Quantity not available"
                 return Good (this.Id, this.Name, this.Price, this.Discounts, this.Quantity - quantity )
             }
+
+        override this.GetHashCode() =
+            hash (this.Id.GetHashCode(), this.Name.GetHashCode(), this.Price.GetHashCode(), this.Discounts.GetHashCode(), this.Quantity.GetHashCode())
+
+        override this.Equals(obj) = 
+            match obj with
+            | :? Good as g -> 
+                this.Id = g.Id
+                && this.Name = g.Name
+                && this.Price = g.Price
+                && this.Discounts = g.Discounts
+                && this.Quantity = g.Quantity
+            | _ -> false
 
         static member StorageName = "_good"
         static member Version = "_01"
