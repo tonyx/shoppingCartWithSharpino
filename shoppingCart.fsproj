@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="Expecto" Version="10.2.1" />
-    <!-- <PackageReference Include="Sharpino" Version="2.2.1" /> -->
+    <PackageReference Include="Sharpino" Version="2.2.1" />
     <!-- <PackageReference Include="librdkafka.redist" Version="2.4.0" /> -->
     <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
@@ -38,8 +38,8 @@
     <!-- <PackageReference Include="Expecto" Version="10.2.1" /> -->
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- <ItemGroup>
     <ProjectReference Include="..\..\realsharpino\Sharpino\Sharpino.Lib\Sharpino.Lib.fsproj" />
-  </ItemGroup>
+  </ItemGroup> -->
 
 </Project>
