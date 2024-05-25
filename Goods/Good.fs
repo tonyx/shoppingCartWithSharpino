@@ -25,7 +25,7 @@ module Good =
         member this.SetPrice (price: decimal) =
             result {
                 do! 
-                    price > 0
+                    price > 0M
                     |> Result.ofBool "Price must be greater than 0"
                 let result = Good (this.Id, this.Name, price, this.Discounts, quantity) 
                 return result
