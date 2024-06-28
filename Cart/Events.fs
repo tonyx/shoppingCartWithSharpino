@@ -5,6 +5,10 @@ open ShoppingCart.Commons
 open ShoppingCart.Cart
 open System
 open Sharpino.Core
+open ShoppingCart.Commons
+open MBrace.FsPickler.Json
+
+open ShoppingCart.Cart
 
 module CartEvents =
     type CartEvents =
@@ -14,7 +18,7 @@ module CartEvents =
                 match this with
                 | GoodAdded (goodRef, quantity) -> cart.AddGood (goodRef, quantity)
 
-        static member Deserialize  json =
+        static member Deserialize json =
             globalSerializer.Deserialize<CartEvents> json
 
         member this.Serialize =

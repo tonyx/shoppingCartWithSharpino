@@ -3,6 +3,8 @@ open System
 open ShoppingCart.Commons
 open Sharpino
 open Sharpino.Core
+open Sharpino.Lib.Core.Commons
+open MBrace.FsPickler.Json
 open FsToolkit.ErrorHandling
 
 module Good =
@@ -12,15 +14,15 @@ module Good =
 
     type Discounts = List<Discount>
 
-    type Good private (id: Guid, name: string, price: decimal, discounts: Discounts, quantity: int) =
+    type Good private (id: Guid, name: string, price: decimal, discounts: Discounts, quantity: int, mySerializer: MySerializer<string>) =
         member this.Id = id
         member this.Name = name
         member this.Price = price
         member this.Discounts = discounts
         member this.Quantity = quantity
 
-        new (id: Guid, name: string, price: decimal, discounts: Discounts ) =
-            Good (id, name, price, discounts, 0 )
+        new (id: Guid, name: string, price: decimal, discounts: Discounts, mySerializer: MySerializer<string>) =
+            Good (id, name, price, discounts, 0, mySerializer )
 
         member this.SetPrice (price: decimal) =
             result {
@@ -61,13 +63,15 @@ module Good =
         static member StorageName = "_good"
         static member Version = "_01"
         static member SnapshotsInterval = 15 
-        static member Deserialize x =
-            x |> globalSerializer.Deserialize
-        member this.Serialize =
-            globalSerializer.Serialize this
 
+        static member Deserialize x = 
+            globalSerializer.Deserialize x
+        member this.Serialize  =
+            globalSerializer.Serialize this
         interface Aggregate<string> with
             member this.Id = this.Id
-            member this.Serialize =
+            member this.Serialize  =
                 this.Serialize 
+        interface Entity with
+            member this.Id = this.Id
 

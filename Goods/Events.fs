@@ -1,5 +1,8 @@
 namespace ShoppingCart 
 open ShoppingCart.Commons
+
+open Sharpino.Core
+open MBrace.FsPickler.Json
 open ShoppingCart.Good
 open Sharpino.Core
 
@@ -18,8 +21,9 @@ module GoodEvents =
                 | QuantityAdded quantity -> good.AddQuantity quantity
                 | QuantityRemoved quantity -> good.RemoveQuantity quantity
 
-        static member Deserialize x =
-            x |> globalSerializer.Deserialize<GoodEvents> 
+        static member Deserialize json =
+            globalSerializer.Deserialize<GoodEvents> json // |> Ok
 
         member this.Serialize =
-            this |> globalSerializer.Serialize
+            globalSerializer.Serialize this
+

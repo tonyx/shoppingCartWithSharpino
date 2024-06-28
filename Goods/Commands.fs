@@ -3,7 +3,6 @@ namespace ShoppingCart
 
 open Sharpino.Core
 open FsToolkit.ErrorHandling
-
 open ShoppingCart.Good
 open ShoppingCart.GoodEvents
 
