@@ -24,40 +24,40 @@ open FsToolkit.ErrorHandling
 
 module Supermarket =
     open Sharpino.CommandHandler
-    let doNothingBroker: IEventBroker =
+    let doNothingBroker: IEventBroker<string> =
         {  notify = None
            notifyAggregate = None }
 
-    type Supermarket (eventStore: IEventStore<string>, eventBroker: IEventBroker) =
+    type Supermarket (eventStore: IEventStore<string>, eventBroker: IEventBroker<string>) =
         let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, string> eventStore
         let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStore
         let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStore
 
         member this.GoodRefs = 
             result {
-                let! (_, state, _ , _) = goodsContainerViewer ()
+                let! (_, state) = goodsContainerViewer ()
                 return state.GoodRefs
             }
         member this.CartRefs =
             result {
-                let! (_, state, _, _) = goodsContainerViewer ()
+                let! (_, state) = goodsContainerViewer ()
                 return state.CartRefs
             }
 
         member this.GetGoodsQuantity (goodRef: Guid) = 
             result {
                 let! esists = this.GetGood goodRef
-                let! (_, state, _, _) = goodsViewer goodRef
+                let! (_, state) = goodsViewer goodRef
                 return state.Quantity
             }
 
         member this.AddQuantity (goodRef: Guid, quantity: int) = 
             result {
-                let! (_, state, _, _) = goodsViewer goodRef
+                let! (_, state) = goodsViewer goodRef
                 let command = GoodCommands.AddQuantity  quantity
                 return! 
                     command 
-                    |> runAggregateCommand<Good, GoodEvents, string> goodRef eventStore eventBroker goodsViewer
+                    |> runAggregateCommand<Good, GoodEvents, string> goodRef eventStore eventBroker
             }
 
         member this.GetGood (goodRef: Guid) = 
@@ -67,12 +67,12 @@ module Supermarket =
                     goods
                     |> List.tryFind (fun g -> g = goodRef)
                     |> Result.ofOption "Good not found"
-                let! (_, state, _, _) = goodsViewer goodRef
+                let! (_, state) = goodsViewer goodRef
                 return state
             }
         member this.Goods =
             result {
-                let! (_, state, _, _) = goodsContainerViewer ()
+                let! (_, state) = goodsContainerViewer ()
 
                 // warning: if there is a ref to an unexisting good you are in trouble. fix it
                 let! goods =
@@ -96,18 +96,18 @@ module Supermarket =
                 let! goodAdded =
                     good.Id 
                     |> AddGood 
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker goodsContainerViewer good
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker good
                 return! Ok ()
             }
 
         member this.RemoveGood (goodRef: Guid) = 
             result {
                 let! good = this.GetGood goodRef
-                let! (_, state, _, _) = goodsContainerViewer ()
+                let! (_, state) = goodsContainerViewer ()
                 let command = GoodsContainerCommands.RemoveGood goodRef
                 return! 
                     command
-                    |> runCommand<GoodsContainer, GoodsContainerEvents, string> eventStore eventBroker goodsContainerViewer
+                    |> runCommand<GoodsContainer, GoodsContainerEvents, string> eventStore eventBroker 
             }
 
         member this.AddCart (cart: Cart) = 
@@ -115,7 +115,7 @@ module Supermarket =
                 return! 
                     cart.Id
                     |> AddCart
-                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, string> eventStore eventBroker goodsContainerViewer cart
+                    |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, string> eventStore eventBroker cart
             }
 
         member this.GetCart (cartRef: Guid) = 
@@ -125,7 +125,7 @@ module Supermarket =
                     cartRefs
                     |> List.tryFind (fun c -> c = cartRef)
                     |> Result.ofOption "Cart not found"
-                let! (_, state, _, _) = cartViewer cartRef
+                let! (_, state) = cartViewer cartRef
                 return state
             }
 
@@ -153,8 +153,6 @@ module Supermarket =
                         [cartRef] 
                         eventStore 
                         eventBroker 
-                        goodsViewer 
-                        cartViewer
                         [removeQuantity] 
                         [addGood] 
                 return ()

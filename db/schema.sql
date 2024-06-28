@@ -17,19 +17,19 @@ SET row_security = off;
 
 
 --
--- Name: insert_01_cart_aggregate_event_and_return_id(text, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_cart_aggregate_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_cart_aggregate_event_and_return_id(event_in text, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_cart_aggregate_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
 inserted_id integer;
     event_id integer;
 BEGIN
-    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
 
-INSERT INTO aggregate_events_01_cart(aggregate_id, event_id, aggregate_state_id )
+INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
 VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
 return event_id;
 END;
@@ -37,10 +37,10 @@ $$;
 
 
 --
--- Name: insert_01_cart_event_and_return_id(text, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_cart_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_cart_event_and_return_id(event_in text, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_cart_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -54,19 +54,19 @@ $$;
 
 
 --
--- Name: insert_01_good_aggregate_event_and_return_id(text, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_good_aggregate_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_good_aggregate_event_and_return_id(event_in text, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_good_aggregate_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
 inserted_id integer;
     event_id integer;
 BEGIN
-    event_id := insert_01_good_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    event_id := insert_01_good_event_and_return_id(event_in, aggregate_id);
 
-INSERT INTO aggregate_events_01_good(aggregate_id, event_id, aggregate_state_id )
+INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
 VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
 return event_id;
 END;
@@ -74,10 +74,10 @@ $$;
 
 
 --
--- Name: insert_01_good_event_and_return_id(text, uuid, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_good_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_good_event_and_return_id(event_in text, aggregate_id uuid, aggregate_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_good_event_and_return_id(event_in text, aggregate_id uuid) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -100,102 +100,10 @@ CREATE FUNCTION public.insert_01_goodscontainer_event_and_return_id(event_in tex
 DECLARE
     inserted_id integer;
 BEGIN
-    INSERT INTO events_01_goodsContainer(event, timestamp, context_state_id)
+    INSERT INTO events_01_goodsContainer(event, timestamp)
     VALUES(event_in::text, now(), context_state_id) RETURNING id INTO inserted_id;
     return inserted_id;
 
-END;
-$$;
-
-
---
--- Name: set_classic_optimistic_lock_01_cart(); Type: PROCEDURE; Schema: public; Owner: -
---
-
-CREATE PROCEDURE public.set_classic_optimistic_lock_01_cart()
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'aggregate_events_01_cart_aggregate_id_state_id_unique') THEN
-ALTER TABLE aggregate_events_01_cart
-    ADD CONSTRAINT aggregate_events_01_cart_aggregate_id_state_id_unique UNIQUE (aggregate_state_id);
-END IF;
-END;
-$$;
-
-
---
--- Name: set_classic_optimistic_lock_01_good(); Type: PROCEDURE; Schema: public; Owner: -
---
-
-CREATE PROCEDURE public.set_classic_optimistic_lock_01_good()
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'aggregate_events_01_good_aggregate_id_state_id_unique') THEN
-ALTER TABLE aggregate_events_01_good
-    ADD CONSTRAINT aggregate_events_01_good_aggregate_id_state_id_unique UNIQUE (aggregate_state_id);
-END IF;
-END;
-$$;
-
-
---
--- Name: set_classic_optimistic_lock_01_goodscontainer(); Type: PROCEDURE; Schema: public; Owner: -
---
-
-CREATE PROCEDURE public.set_classic_optimistic_lock_01_goodscontainer()
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'context_events_01_goodsContainer_context_state_id_unique') THEN
-ALTER TABLE events_01_goodsContainer
-    ADD CONSTRAINT context_events_01_goodsContainer_context_state_id_unique UNIQUE (context_state_id);
-END IF;
-END;
-$$;
-
-
---
--- Name: un_set_classic_optimistic_lock_01_cart(); Type: PROCEDURE; Schema: public; Owner: -
---
-
-CREATE PROCEDURE public.un_set_classic_optimistic_lock_01_cart()
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    ALTER TABLE aggregate_events_01_cart
-    DROP CONSTRAINT IF EXISTS aggregate_events_01_cart_aggregate_id_state_id_unique;
-    -- You can have more SQL statements as needed
-END;
-$$;
-
-
---
--- Name: un_set_classic_optimistic_lock_01_good(); Type: PROCEDURE; Schema: public; Owner: -
---
-
-CREATE PROCEDURE public.un_set_classic_optimistic_lock_01_good()
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    ALTER TABLE aggregate_events_01_good
-    DROP CONSTRAINT IF EXISTS aggregate_events_01_good_aggregate_id_state_id_unique;
-    -- You can have more SQL statements as needed
-END;
-$$;
-
-
---
--- Name: un_set_classic_optimistic_lockcontext_events_01_goodscontainer(); Type: PROCEDURE; Schema: public; Owner: -
---
-
-CREATE PROCEDURE public.un_set_classic_optimistic_lockcontext_events_01_goodscontainer()
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    ALTER TABLE eventscontext_events_01_goodsContainer
-    DROP CONSTRAINT IF EXISTS context_eventscontext_events_01_goodsContainer_context_state_id_unique;
 END;
 $$;
 
@@ -247,7 +155,6 @@ CREATE SEQUENCE public.aggregate_events_01_good_id_seq
 CREATE TABLE public.aggregate_events_01_good (
     id integer DEFAULT nextval('public.aggregate_events_01_good_id_seq'::regclass) NOT NULL,
     aggregate_id uuid NOT NULL,
-    aggregate_state_id uuid,
     event_id integer
 );
 
@@ -261,8 +168,6 @@ CREATE TABLE public.events_01_cart (
     aggregate_id uuid NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    kafkaoffset bigint,
-    kafkapartition integer,
     "timestamp" timestamp without time zone NOT NULL
 );
 
@@ -290,8 +195,6 @@ CREATE TABLE public.events_01_good (
     aggregate_id uuid NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    kafkaoffset bigint,
-    kafkapartition integer,
     "timestamp" timestamp without time zone NOT NULL
 );
 
@@ -318,8 +221,6 @@ CREATE TABLE public.events_01_goodscontainer (
     id integer NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    kafkaoffset bigint,
-    kafkapartition integer,
     context_state_id uuid NOT NULL,
     "timestamp" timestamp without time zone NOT NULL
 );
@@ -369,7 +270,6 @@ CREATE TABLE public.snapshots_01_cart (
     snapshot text NOT NULL,
     event_id integer,
     aggregate_id uuid NOT NULL,
-    aggregate_state_id uuid,
     "timestamp" timestamp without time zone NOT NULL
 );
 
@@ -395,7 +295,6 @@ CREATE TABLE public.snapshots_01_good (
     snapshot text NOT NULL,
     event_id integer,
     aggregate_id uuid NOT NULL,
-    aggregate_state_id uuid,
     "timestamp" timestamp without time zone NOT NULL
 );
 

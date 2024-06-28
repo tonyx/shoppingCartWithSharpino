@@ -1,15 +1,6 @@
 
 namespace ShoppingCart
 
-open System
-open Sharpino
-open Sharpino.Storage
-open Sharpino.Core
-open Sharpino.Lib.Core.Commons
-open Sharpino.Utils
-open Sharpino.Core
-open Sharpino.Utils
-open Sharpino.Result
 open MBrace.FsPickler.Json
 open MBrace.FsPickler
 
@@ -44,17 +35,4 @@ module Commons =
                 binaryPickle.Pickle obj
         }
 
-    let mutable globalSerializer: MySerializer<_> = jsonPicklerSerializer
-    let mutable globalSerializerJson: MySerializer<_> = binaryPicklerSerializer
-
-    type MyGlobalSerializer(mySerializer: MySerializer<_>) =
-        let mutable mySerializer = mySerializer
-
-        member this.SetSerializer (serializer: MySerializer<_>) =
-            mySerializer <- serializer
-
-        member this.Deserialize (json: 'F) =
-            mySerializer.Deserialize json
-
-        member this.Serialize (obj: 'A) =
-            mySerializer.Serialize obj
+    let globalSerializer: MySerializer<_> = jsonPicklerSerializer

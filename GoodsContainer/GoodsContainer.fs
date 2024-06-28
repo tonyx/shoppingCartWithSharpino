@@ -2,18 +2,14 @@ namespace ShoppingCart
 open ShoppingCart.Commons
 open System
 open Sharpino
-open Sharpino.Core
-open Sharpino.Utils
-open Sharpino.Result
-open Sharpino.Definitions
-open FSharpPlus
+
 open MBrace.FsPickler.Json
 open FsToolkit.ErrorHandling
 
 module GoodsContainer =
 
     let pickler = FsPickler.CreateJsonSerializer(indent = false)
-    type GoodsContainer(goodRefs: List<Guid>, cartRefs: List<Guid>, mySerializer: MySerializer<'F>) =
+    type GoodsContainer(goodRefs: List<Guid>, cartRefs: List<Guid>, mySerializer: MySerializer<string>) =
 
         let stateId = Guid.NewGuid()
         member this.StateId = stateId
@@ -48,7 +44,7 @@ module GoodsContainer =
         static member SnapshotsInterval = 15
         static member Lock =
             new Object()
-        static member Deserialize (serializer: ISerializer, json: 'F) =
+        static member Deserialize json =
             globalSerializer.Deserialize<GoodsContainer> json // |> Ok
-        member this.Serialize(serializer: ISerializer) =
+        member this.Serialize =
             globalSerializer.Serialize this
