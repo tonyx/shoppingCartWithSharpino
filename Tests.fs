@@ -124,9 +124,13 @@ let setUpDbAndTopics () =
     topicSetup ()
     ()  
 
+let doNothingBroker: IEventBroker<string> =
+    {  notify = None
+       notifyAggregate = None }
+
 let marketInstances =
     [
-        Supermarket(eventStorePostgres, doNothingBroker, goodsViewer, cartViewer, goodsContainerViewer), "eventStorePostgres", onlyDbSetup , (fun () -> ())  ;
+        Supermarket(eventStorePostgres, doNothingBroker), "eventStorePostgres", onlyDbSetup , (fun () -> ())  ;
 
         // Supermarket(eventStorePostgres, standardBroker, kafkaGoodsViewer, kafkaCartViewer, kafkaGoodsContainerViewer), "eventStorePostgres", setUpDbAndTopics, viewerRefreshers;
         // Supermarket(eventStorePostgres, doNothingBroker, goodsViewer, cartViewer), "eventStorePostgres", (fun () -> setUp eventStorePostgres), (fun () -> ())  ;
@@ -134,7 +138,7 @@ let marketInstances =
 [<Tests>]
 let tests =
     testList "samples" [
-        fmultipleTestCase "there are no good in a Supermarket" marketInstances <| fun (supermarket, eventStore, setup, _) ->
+        multipleTestCase "there are no good in a Supermarket" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup()
 
             let goods = supermarket.Goods
@@ -144,24 +148,27 @@ let tests =
         
         fmultipleTestCase "add a good to the supermarket and retrieve it" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
+            printf "XXX. SETUP 100\n"
 
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
+            printf "XXX. SETUP 200\n"
             refresh()
             let retrieved = supermarket.GetGood good.Id
+            printf "XXX. SETUP 300\n"
             Expect.isOk retrieved "should be ok"
             let retrieved' = retrieved.OkValue
             Expect.equal  retrieved'.Id good.Id "should be the same good"
 
-        fmultipleTestCase "add a good and put it in the supermarket" marketInstances <| fun (supermarket, eventStore, setup, _) ->
+        multipleTestCase "add a good and put it in the supermarket" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup ()
 
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
 
-        fmultipleTestCase "add a good and its quantity is zero" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "add a good and its quantity is zero" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let id = Guid.NewGuid()
@@ -174,7 +181,7 @@ let tests =
             let result = retrievedQuantity.OkValue
             Expect.equal result 0 "should be the same quantity"
 
-        fmultipleTestCase "add a good, then increase its quantity - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "add a good, then increase its quantity - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let id = Guid.NewGuid()
@@ -190,14 +197,14 @@ let tests =
             Expect.equal result 10 "should be the same quantity"
 
 
-        fmultipleTestCase "create a cart" marketInstances <| fun (supermarket, eventStore, setup, _) ->
+        multipleTestCase "create a cart" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup ()
             let cartId = Guid.NewGuid()
             let cart = Cart(cartId, Map.empty)
             let basket = supermarket.AddCart cart
             Expect.isOk basket "should be ok"
 
-        fmultipleTestCase "add a good, add a quantity and then put something in a cart. the total quantity will be decreased - Ok" marketInstances <| fun (supermarket, eventStore, setup,  refresh) ->
+        multipleTestCase "add a good, add a quantity and then put something in a cart. the total quantity will be decreased - Ok" marketInstances <| fun (supermarket, eventStore, setup,  refresh) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -231,7 +238,7 @@ let tests =
             // let result = quantity.OkValue
             // Expect.equal result 9 "should be the same quantity"
 
-        fmultipleTestCase "try adding more items than available. - Error" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "try adding more items than available. - Error" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -252,7 +259,7 @@ let tests =
             let addedToCart = supermarket.AddGoodToCart(cartId, good.Id, 11)
             Expect.isError addedToCart "should be an error"
 
-        fmultipleTestCase "try adding a good into an unexisting cart - Error" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "try adding a good into an unexisting cart - Error" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
@@ -264,7 +271,7 @@ let tests =
             let addedToCart = supermarket.AddGoodToCart(Guid.NewGuid(), good.Id, 1)
             Expect.isError addedToCart "should be an error"
 
-        fmultipleTestCase "try adding an unexisting good to a cart - Error" marketInstances <| fun (supermarket, eventStore, setup, _) ->
+        multipleTestCase "try adding an unexisting good to a cart - Error" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -275,7 +282,7 @@ let tests =
             let addedToCart = supermarket.AddGoodToCart(cartId, Guid.NewGuid(), 1)
             Expect.isError addedToCart "should be an error" 
 
-        fmultipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -316,7 +323,7 @@ let tests =
             Expect.isOk Good2Quantity "should be ok"
             Expect.equal Good2Quantity.OkValue 9 "should be the same quantity"
 
-        fmultipleTestCase "add multiple good to a cart, exceeding quantity of one - Error" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "add multiple good to a cart, exceeding quantity of one - Error" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -358,7 +365,7 @@ let tests =
             Expect.isOk result2 "should be ok"
             Expect.equal result2.OkValue 10 "should be the same quantity"
 
-        fmultipleTestCase "add and a good and it's quantity will be zero - Ok" marketInstances <| fun (supermarket, eventStore, setup, _) ->
+        multipleTestCase "add and a good and it's quantity will be zero - Ok" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -375,7 +382,7 @@ let tests =
             let result = quantity.OkValue
             Expect.equal result 0 "should be the same quantity"
 
-        fmultipleTestCase "can't add twice a good with the same name - Error" marketInstances <| fun (supermarket, eventStore, setup, _) ->
+        multipleTestCase "can't add twice a good with the same name - Error" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup()
 
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
@@ -386,7 +393,7 @@ let tests =
             let addedTwice = supermarket.AddGood good2
             Expect.isError addedTwice "should be an error"
 
-        fmultipleTestCase "add a good and remove it - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "add a good and remove it - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
@@ -398,7 +405,7 @@ let tests =
             let retrieved = supermarket.GetGood good.Id
             Expect.isError retrieved "should be an error"
 
-        fmultipleTestCase  "when remove a good then can gets its quantity - Error" marketInstances <| fun (supermarket, eventStore, setup, _) ->
+        multipleTestCase  "when remove a good then can gets its quantity - Error" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup ()
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
@@ -409,7 +416,7 @@ let tests =
             let quantity = supermarket.GetGoodsQuantity good.Id
             Expect.isError quantity "should be an error"
 
-        fmultipleTestCase "Initial state. Add many goods and add quantity to them many times. Verify multiple events and multiple aggregate updates - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "Initial state. Add many goods and add quantity to them many times. Verify multiple events and multiple aggregate updates - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
             let good1Id = Guid.NewGuid()
             let good1 = Good (good1Id, "Good1", 10.0m, [])

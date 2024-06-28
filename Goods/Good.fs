@@ -14,15 +14,15 @@ module Good =
 
     type Discounts = List<Discount>
 
-    type Good private (id: Guid, name: string, price: decimal, discounts: Discounts, quantity: int, mySerializer: MySerializer<string>) =
+    type Good private (id: Guid, name: string, price: decimal, discounts: Discounts, quantity: int) =
         member this.Id = id
         member this.Name = name
         member this.Price = price
         member this.Discounts = discounts
         member this.Quantity = quantity
 
-        new (id: Guid, name: string, price: decimal, discounts: Discounts, mySerializer: MySerializer<string>) =
-            Good (id, name, price, discounts, 0, mySerializer )
+        new (id: Guid, name: string, price: decimal, discounts: Discounts) =
+            Good (id, name, price, discounts, 0 )
 
         member this.SetPrice (price: decimal) =
             result {

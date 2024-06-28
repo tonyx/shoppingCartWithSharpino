@@ -34,16 +34,6 @@ module Supermarket =
         let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStore
         let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStore
 
-let doNothingBroker: IEventBroker<'F> =
-        {  notify = None
-           notifyAggregate = None }
-
-    // type Supermarket (eventStore: IEventStore<'F>, eventBroker: IEventBroker<_>) =
-    type Supermarket (eventStore: IEventStore<'F>, eventBroker: IEventBroker<_>, goodsViewer: AggregateViewer<Good>, cartViewer: AggregateViewer<Cart>, goodsContainerViewer: StateViewer<GoodsContainer>) =
-        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, 'F> eventStore
-        // let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, 'F> eventStore
-        // let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, 'F> eventStore
-
         member this.GoodRefs = 
             result {
                 let! (_, state) = goodsContainerViewer ()
@@ -64,11 +54,11 @@ let doNothingBroker: IEventBroker<'F> =
 
         member this.AddQuantity (goodId: Guid, quantity: int) = 
             result {
-                let! (_, state) = goodsViewer goodRef
+                let! (_, state) = goodsViewer goodId
                 let command = GoodCommands.AddQuantity  quantity
                 return! 
                     command 
-                    |> runAggregateCommand<Good, GoodEvents, string> goodRef eventStore eventBroker
+                    |> runAggregateCommand<Good, GoodEvents, string> goodId eventStore eventBroker
             }
 
         member this.GetGood (id: Guid) = 
@@ -78,7 +68,7 @@ let doNothingBroker: IEventBroker<'F> =
                     goods
                     |> List.tryFind (fun g -> g = id)
                     |> Result.ofOption "Good not found"
-                let! (_, state) = goodsViewer goodRef
+                let! (_, state) = goodsViewer id
                 return state
             }
         member this.Goods =
@@ -113,9 +103,9 @@ let doNothingBroker: IEventBroker<'F> =
 
         member this.RemoveGood (id: Guid) = 
             result {
-                let! good = this.GetGood goodRef
+                let! good = this.GetGood id
                 let! (_, state) = goodsContainerViewer ()
-                let command = GoodsContainerCommands.RemoveGood goodRef
+                let command = GoodsContainerCommands.RemoveGood id
                 return! 
                     command
                     |> runCommand<GoodsContainer, GoodsContainerEvents, string> eventStore eventBroker 

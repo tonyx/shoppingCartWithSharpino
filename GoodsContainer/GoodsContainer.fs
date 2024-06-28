@@ -9,9 +9,7 @@ open FsToolkit.ErrorHandling
 module GoodsContainer =
 
     let pickler = FsPickler.CreateJsonSerializer(indent = false)
-    type GoodsContainer(goodRefs: List<Guid>, cartRefs: List<Guid>, mySerializer: MySerializer<string>) =
 
-module GoodsContainer =
     type GoodsContainer(goodRefs: List<Guid>, cartRefs: List<Guid>) =
 
         let stateId = Guid.NewGuid()

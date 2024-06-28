@@ -234,7 +234,6 @@ CREATE TABLE public.events_01_goodscontainer (
     id integer NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    context_state_id uuid,
     "timestamp" timestamp without time zone NOT NULL
 );
 
