@@ -62,8 +62,9 @@ ALTER TABLE ONLY public.aggregate_events_01_cart
     ADD CONSTRAINT aggregate_events_01_fk  FOREIGN KEY (event_id) REFERENCES public.events_01_cart (id) MATCH FULL ON DELETE CASCADE;
 
 CREATE OR REPLACE FUNCTION insert_01_cart_event_and_return_id(
-    IN event_in TEXT,
+    IN event_in text,
     IN aggregate_id uuid
+
 )
 RETURNS int
        
@@ -81,6 +82,7 @@ $$;
 CREATE OR REPLACE FUNCTION insert_01_cart_aggregate_event_and_return_id(
     IN event_in TEXT,
     IN aggregate_id uuid 
+
 )
 RETURNS int
     
@@ -94,6 +96,12 @@ BEGIN
 
 INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
 VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+    -- event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
+
+INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
+-- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
 return event_id;
 END;
 $$;

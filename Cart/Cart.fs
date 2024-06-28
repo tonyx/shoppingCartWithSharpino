@@ -9,7 +9,6 @@ open MBrace.FsPickler.Json
 open FsToolkit.ErrorHandling
 
 module Cart =
-    let pickler = FsPickler.CreateJsonSerializer (indent = false)
     type Cart (id: Guid, goods: Map<Guid, int>) =
         member this.Id = id
         member this.Goods = goods
@@ -38,9 +37,6 @@ module Cart =
             member this.Id = this.Id
             member this.Serialize  =
                 this.Serialize 
+            member this.Serialize =
+                this.Serialize
         
-        interface Entity with
-            member this.Id = this.Id
-
-
-

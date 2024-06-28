@@ -20,6 +20,7 @@ open Sharpino.Core
 open Sharpino.Utils
 open Sharpino.Result
 open Sharpino.PgStorage
+open FSharpPlus
 open FsToolkit.ErrorHandling
 
 module Supermarket =
@@ -33,6 +34,16 @@ module Supermarket =
         let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, string> eventStore
         let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, string> eventStore
 
+let doNothingBroker: IEventBroker<'F> =
+        {  notify = None
+           notifyAggregate = None }
+
+    // type Supermarket (eventStore: IEventStore<'F>, eventBroker: IEventBroker<_>) =
+    type Supermarket (eventStore: IEventStore<'F>, eventBroker: IEventBroker<_>, goodsViewer: AggregateViewer<Good>, cartViewer: AggregateViewer<Cart>, goodsContainerViewer: StateViewer<GoodsContainer>) =
+        let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, 'F> eventStore
+        // let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, 'F> eventStore
+        // let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, 'F> eventStore
+
         member this.GoodRefs = 
             result {
                 let! (_, state) = goodsContainerViewer ()
@@ -44,14 +55,14 @@ module Supermarket =
                 return state.CartRefs
             }
 
-        member this.GetGoodsQuantity (goodRef: Guid) = 
+        member this.GetGoodsQuantity (goodId: Guid) = 
             result {
-                let! esists = this.GetGood goodRef
-                let! (_, state) = goodsViewer goodRef
+                let! esists = this.GetGood goodId
+                let! (_, state) = goodsViewer goodId
                 return state.Quantity
             }
 
-        member this.AddQuantity (goodRef: Guid, quantity: int) = 
+        member this.AddQuantity (goodId: Guid, quantity: int) = 
             result {
                 let! (_, state) = goodsViewer goodRef
                 let command = GoodCommands.AddQuantity  quantity
@@ -60,12 +71,12 @@ module Supermarket =
                     |> runAggregateCommand<Good, GoodEvents, string> goodRef eventStore eventBroker
             }
 
-        member this.GetGood (goodRef: Guid) = 
+        member this.GetGood (id: Guid) = 
             result {
                 let! goods = this.GoodRefs
                 let! goodExist = 
                     goods
-                    |> List.tryFind (fun g -> g = goodRef)
+                    |> List.tryFind (fun g -> g = id)
                     |> Result.ofOption "Good not found"
                 let! (_, state) = goodsViewer goodRef
                 return state
@@ -100,7 +111,7 @@ module Supermarket =
                 return! Ok ()
             }
 
-        member this.RemoveGood (goodRef: Guid) = 
+        member this.RemoveGood (id: Guid) = 
             result {
                 let! good = this.GetGood goodRef
                 let! (_, state) = goodsContainerViewer ()
@@ -129,34 +140,46 @@ module Supermarket =
                 return state
             }
 
-        member this.AddGoodToCart (cartRef: Guid, goodRef: Guid, quantity: int) =
+        member this.AddGoodToCart (cartId: Guid, goodId: Guid, quantity: int) =
             result {
-                // under comment the code as it was before ingroducing runTwoNAggregateCommands
-
-                // let! good = this.GetGood goodRef
-                // let! cart = this.GetCart cartRef
-                // let removeAQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                // let! removedFromGood = 
-                //     [removeAQuantity]
-                //     |> runNAggregateCommands<Good, GoodEvents> [goodRef] eventStore eventBroker goodsViewer
-                // let commandAddAQuantity: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
-                // let! addedToCart = 
-                //     [commandAddAQuantity]
-                //     |> runNAggregateCommands<Cart, CartEvents> [cartRef] eventStore eventBroker cartViewer
-
                 let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodRef, quantity) 
-
-                let! moveFromGoodToCart =
+                let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
+                return! 
                     runTwoNAggregateCommands 
-                        [goodRef]
-                        [cartRef] 
+                        [goodId]
+                        [cartId] 
                         eventStore 
                         eventBroker 
                         [removeQuantity] 
                         [addGood] 
-                return ()
+            }
 
+        member this.AddGoodsToCart (cartId: Guid, goods: (Guid * int) list) =
+            result {
+                let commands = 
+                    goods
+                    |> List.map (fun (goodId, quantity) -> 
+                        let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
+                        let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
+                        (removeQuantity, addGood)
+                    )
+                let goodIds = goods |>> fst
+                let commandRemove = commands |>> fst
+                let commandAdd = commands |>> snd
+                let size = goods.Length
+
+                let cartids =
+                    [1..size] |>> (fun _ -> cartId)
+                
+                return!
+                    runTwoNAggregateCommands 
+                        goodIds
+                        cartids
+                        eventStore 
+                        eventBroker 
+                        commandRemove
+                        commandAdd
             }
 
 
+  

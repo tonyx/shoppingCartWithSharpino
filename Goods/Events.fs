@@ -1,11 +1,12 @@
 namespace ShoppingCart 
 open ShoppingCart.Commons
+
 open Sharpino.Core
 open MBrace.FsPickler.Json
 open ShoppingCart.Good
+open Sharpino.Core
 
 module GoodEvents =
-    let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type GoodEvents =   
     | PriceChanged of decimal
     | DiscountsChanged of List<Good.Discount>
@@ -25,5 +26,4 @@ module GoodEvents =
 
         member this.Serialize =
             globalSerializer.Serialize this
-
 

@@ -31,6 +31,12 @@ BEGIN
 
 INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
 VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+    -- event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
+
+INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
+-- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
 return event_id;
 END;
 $$;
@@ -68,6 +74,13 @@ BEGIN
 
 INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
 VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+
+-- INSERT INTO aggregate_events_01_good(aggregate_id, event_id, aggregate_state_id )
+-- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+
+INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
+
 return event_id;
 END;
 $$;
@@ -91,17 +104,17 @@ $$;
 
 
 --
--- Name: insert_01_goodscontainer_event_and_return_id(text, uuid); Type: FUNCTION; Schema: public; Owner: -
+-- Name: insert_01_goodscontainer_event_and_return_id(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.insert_01_goodscontainer_event_and_return_id(event_in text, context_state_id uuid) RETURNS integer
+CREATE FUNCTION public.insert_01_goodscontainer_event_and_return_id(event_in text) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
     inserted_id integer;
 BEGIN
     INSERT INTO events_01_goodsContainer(event, timestamp)
-    VALUES(event_in::text, now(), context_state_id) RETURNING id INTO inserted_id;
+    VALUES(event_in::text, now()) RETURNING id INTO inserted_id;
     return inserted_id;
 
 END;
@@ -221,7 +234,7 @@ CREATE TABLE public.events_01_goodscontainer (
     id integer NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    context_state_id uuid NOT NULL,
+    context_state_id uuid,
     "timestamp" timestamp without time zone NOT NULL
 );
 

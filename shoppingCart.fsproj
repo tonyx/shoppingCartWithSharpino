@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
 
@@ -20,19 +20,28 @@
     <Compile Include="GoodsContainer/Commands.fs" />
     <Compile Include="SuperMarket.fs" />
     <Compile Include="Tests.fs" />
+    <Compile Include="TestsOfKafka.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Expecto" Version="10.2.1" />
-    <!-- <PackageReference Include="Sharpino" Version="1.6.6" /> -->
+
+    <PackageReference Include="Sharpino" Version="2.2.3" />
+    <PackageReference Include="Sharpino.Core" Version="2.0.4" />
+    <!-- <PackageReference Include="librdkafka.redist" Version="2.4.0" /> -->
     <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Update="FSharp.Core" Version="8.*" />
+    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Confluent.Kafka" Version="2.4.0" />
+    <PackageReference Include="librdkafka.redist" Version="2.4.0" />
+    <PackageReference Include="MinVer" Version="5.0.0" PrivateAssets="All" />
+    <!-- <PackageReference Include="Expecto" Version="10.2.1" /> -->
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- <ItemGroup>
     <ProjectReference Include="..\..\realsharpino\Sharpino\Sharpino.Lib\Sharpino.Lib.fsproj" />
-  </ItemGroup>
+  </ItemGroup> -->
 
 </Project>

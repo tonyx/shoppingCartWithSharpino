@@ -7,7 +7,6 @@ open MBrace.FsPickler.Json
 open ShoppingCart.GoodsContainer
 
 module GoodsContainerEvents =
-    let pickler = FsPickler.CreateJsonSerializer(indent = false)
     type GoodsContainerEvents =
         | GoodAdded of Guid
         | GoodRemoved of Guid
@@ -23,3 +22,4 @@ module GoodsContainerEvents =
             globalSerializer.Deserialize<GoodsContainerEvents> x
         member this.Serialize =
             globalSerializer.Serialize this
+
