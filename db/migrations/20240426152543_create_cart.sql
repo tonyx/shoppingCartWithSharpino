@@ -95,12 +95,10 @@ BEGIN
     event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
 
 INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
-VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
-    -- event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id, aggregate_state_id);
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
     event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
 
 INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
--- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
 VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
 return event_id;
 END;

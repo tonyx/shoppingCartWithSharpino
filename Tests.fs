@@ -146,17 +146,14 @@ let tests =
             Expect.isOk goods "should be ok"
             Expect.equal goods.OkValue [] "There are no goods in the supermarket."
         
-        fmultipleTestCase "add a good to the supermarket and retrieve it" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        multipleTestCase "add a good to the supermarket and retrieve it" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
-            printf "XXX. SETUP 100\n"
 
             let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
             let added = supermarket.AddGood good
             Expect.isOk added "should be ok"
-            printf "XXX. SETUP 200\n"
             refresh()
             let retrieved = supermarket.GetGood good.Id
-            printf "XXX. SETUP 300\n"
             Expect.isOk retrieved "should be ok"
             let retrieved' = retrieved.OkValue
             Expect.equal  retrieved'.Id good.Id "should be the same good"

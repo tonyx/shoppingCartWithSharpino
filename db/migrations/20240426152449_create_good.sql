@@ -81,7 +81,6 @@ CREATE OR REPLACE FUNCTION insert_01_good_aggregate_event_and_return_id(
 
     IN event_in text,
     IN aggregate_id uuid 
-    -- in aggregate_state_id uuid
 )
 RETURNS int
     
@@ -94,7 +93,7 @@ BEGIN
     event_id := insert_01_good_event_and_return_id(event_in, aggregate_id);
 
 INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
-VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
 
 -- INSERT INTO aggregate_events_01_good(aggregate_id, event_id, aggregate_state_id )
 -- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
