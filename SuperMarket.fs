@@ -51,6 +51,17 @@ module Supermarket =
                 let! (_, state) = goodsViewer goodId
                 return state.Quantity
             }
+        member this.GetGoodsQuantityAsync (goodId: Guid) = 
+            Async.RunSynchronously
+                (async {
+                    return
+                        result {
+                            let! esists = this.GetGood goodId
+                            let! (_, state) = goodsViewer goodId
+                            return state.Quantity
+                        }
+                }, 100)
+            //./ |> Async.StartAsTask
 
         member this.AddQuantity (goodId: Guid, quantity: int) = 
             result {
@@ -98,8 +109,14 @@ module Supermarket =
                     good.Id 
                     |> AddGood 
                     |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Good, 'F> eventStore eventBroker good
-                return! Ok ()
+                return ()
             }
+        member this.AddGoodAsync (good: Good) =
+            async {
+                return 
+                    this.AddGood good
+            }
+            |> Async.StartAsTask
 
         member this.RemoveGood (id: Guid) = 
             result {
@@ -111,6 +128,13 @@ module Supermarket =
                     |> runCommand<GoodsContainer, GoodsContainerEvents, string> eventStore eventBroker 
             }
 
+        member this.RemoveGoodAsync (id: Guid) =
+            async {
+                return 
+                    this.RemoveGood id
+            }
+            |> Async.StartAsTask
+
         member this.AddCart (cart: Cart) = 
             result {
                 return! 
@@ -118,6 +142,13 @@ module Supermarket =
                     |> AddCart
                     |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, string> eventStore eventBroker cart
             }
+
+        member this.AddCartAsync (cart: Cart) =
+            async {
+                return 
+                    this.AddCart cart
+            } 
+            |> Async.StartAsTask
 
         member this.GetCart (cartRef: Guid) = 
             result {
@@ -129,6 +160,13 @@ module Supermarket =
                 let! (_, state) = cartViewer cartRef
                 return state
             }
+
+        member this.GetCartAsync (cartRef: Guid) =
+            async {
+                return 
+                    this.GetCart cartRef
+            } 
+            |> Async.StartAsTask
 
         member this.AddGoodToCart (cartId: Guid, goodId: Guid, quantity: int) =
             result {
@@ -143,6 +181,13 @@ module Supermarket =
                         [removeQuantity] 
                         [addGood] 
             }
+
+        member this.AddGoodToCartAsync (cartId: Guid, goodId: Guid, quantity: int) =
+            async {
+                return 
+                    this.AddGoodToCart (cartId, goodId, quantity)
+            } 
+            |> Async.StartAsTask
 
         member this.AddGoodsToCart (cartId: Guid, goods: (Guid * int) list) =
             result {
@@ -169,7 +214,13 @@ module Supermarket =
                         eventBroker 
                         commandRemove
                         commandAdd
-            }
+            } 
+        member this.AddGoodsToCartAsync (cartId: Guid, goods: (Guid * int) list) =
+            async {
+                return 
+                    this.AddGoodsToCart (cartId, goods)
+            } 
+            |> Async.StartAsTask
 
 
   
