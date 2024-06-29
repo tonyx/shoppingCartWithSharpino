@@ -8,12 +8,9 @@ open FsToolkit.ErrorHandling
 
 module GoodsContainer =
 
-    let pickler = FsPickler.CreateJsonSerializer(indent = false)
 
     type GoodsContainer(goodRefs: List<Guid>, cartRefs: List<Guid>) =
 
-        let stateId = Guid.NewGuid()
-        member this.StateId = stateId
         member this.GoodRefs = goodRefs
         member this.CartRefs = cartRefs
 
@@ -43,7 +40,7 @@ module GoodsContainer =
         static member StorageName = "_goodsContainer"
         static member Version = "_01"
         static member SnapshotsInterval = 15
-        static member Deserialize json =
-            globalSerializer.Deserialize<GoodsContainer> json 
+        static member Deserialize x =
+            globalSerializer.Deserialize<GoodsContainer> x 
         member this.Serialize =
             this |> globalSerializer.Serialize
