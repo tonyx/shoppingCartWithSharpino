@@ -1,3 +1,6 @@
 # shoppingCartWithSharpino
 
-Broken in execution (deser/ser issues). Work in progress
+## Description
+An example of a shopping cart using the Sharpino library.
+Tests of the undoers are ok in explaining but need refactoring.
+
