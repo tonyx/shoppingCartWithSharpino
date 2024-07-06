@@ -51,7 +51,6 @@ CREATE SEQUENCE public.aggregate_events_01_cart_id_seq
 CREATE TABLE public.aggregate_events_01_cart (
                                                     id integer DEFAULT nextval('public.aggregate_events_01_cart_id_seq') NOT NULL,
                                                     aggregate_id uuid NOT NULL,
-                                                    aggregate_state_id uuid,
                                                     event_id integer
 );
 
@@ -104,8 +103,23 @@ return event_id;
 END;
 $$;
 
+-- CREATE TABLE public.aggregate_undo_commands_buffer_01_cart (
+--     id integer NOT NULL,
+--     aggregate_id uuid NOT NULL,
+--     command text NOT NULL,
+--     "timestamp" timestamp without time zone NOT NULL
+-- );
 
+-- ALTER TABLE public.aggregate_undo_commands_buffer_01_cart ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+--     SEQUENCE NAME public.aggregate_undo_commands_buffer_01_cart_id_seq
+--     START WITH 1
+--     INCREMENT BY 1
+--     NO MINVALUE
+--     NO MAXVALUE
+--     CACHE 1
+-- );
 
+-- ALTER TABLE ONLY public.aggregate_undo_commands_buffer_01_cart
+--     ADD CONSTRAINT aggregate_undo_commands_buffer_01_cart_pkey PRIMARY KEY (id);
 
 -- migrate:down
-

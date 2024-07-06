@@ -30,6 +30,8 @@ open ShoppingCart.CartEvents
 open ShoppingCart.GoodEvents
 open Sharpino.KafkaReceiver
 open ShoppingCart.GoodsContainerEvents
+open ShoppingCart.GoodCommands
+open Sharpino.Core
 
 let setUp (eventStore: IEventStore<'F>) =
     eventStore.Reset GoodsContainer.Version GoodsContainer.StorageName
@@ -454,6 +456,55 @@ let tests =
 
             let supermarketGoodState = supermarket.GetGood good1Id |> Result.get
             Expect.equal supermarketGoodState.Quantity 20 "should be the same state"
+
+
+        multipleTestCase "retrieve the undoer of a command, apply the command, then retrieve the events from the undoer and check that they will be the events that works as the anticommand - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+            setup ()
+
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
+            let goodAdded = supermarket.AddGood good
+
+            Expect.isOk goodAdded "should be ok"
+
+            let addQuantityCommand:AggregateCommand<Good,GoodEvents> = GoodCommands.AddQuantity 1
+
+            let undoer = addQuantityCommand.Undoer
+            let firstShotUndoer = undoer |> Option.get
+            let undoerEvents = firstShotUndoer good goodsViewer
+            Expect.isOk undoerEvents "should be ok"
+
+            let addQuantity = runAggregateCommand<Good, GoodEvents, string> good.Id eventStorePostgres doNothingBroker addQuantityCommand
+            Expect.isOk addQuantity "should be ok"
+            let goodRetrieved = supermarket.GetGood good.Id |> Result.get
+            Expect.equal goodRetrieved.Quantity 1 "should be the same quantity"
+
+            let undoerEvents' = undoerEvents |> Result.get
+
+            let undoerEventsResult = undoerEvents' () 
+            Expect.isOk undoerEventsResult "should be ok"
+            let result = undoerEventsResult |> Result.get
+            Expect.equal result.Length 1 "should be the same quantity"
+            Expect.equal result.[0] (QuantityRemoved 1) "should be the same quantity"
+
+
+        multipleTestCase "can't apply the undoer of a command before the related command has actually been applied - Error" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+            setup ()
+            let good = Good(Guid.NewGuid(), "Good", 10.0m, [])
+            let goodAdded = supermarket.AddGood good
+
+            Expect.isOk goodAdded "should be ok"
+
+            let addQuantityCommand:AggregateCommand<Good,GoodEvents> = GoodCommands.AddQuantity 1
+
+            let undoer = addQuantityCommand.Undoer
+            let firstShotUndoer = undoer |> Option.get
+            let undoerEvents = firstShotUndoer good goodsViewer
+            Expect.isOk undoerEvents "should be ok"
+
+            let undoerEvents' = undoerEvents |> Result.get
+
+            let undoerEventsResult = undoerEvents' () 
+            Expect.isError undoerEventsResult "should be an error"
 
 
     ]

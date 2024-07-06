@@ -42,8 +42,8 @@ ALTER TABLE ONLY public.snapshots_01_goodsContainer
 
 CREATE OR REPLACE FUNCTION insert_01_goodsContainer_event_and_return_id(
     IN event_in text 
-    -- IN context_state_id uuid
 )
+
 RETURNS int
        
 LANGUAGE plpgsql

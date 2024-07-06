@@ -1,10 +1,13 @@
 
 namespace ShoppingCart 
 
+open ShoppingCart.Commons
 open Sharpino.Core
 open FsToolkit.ErrorHandling
 open ShoppingCart.Good
 open ShoppingCart.GoodEvents
+open Sharpino
+open MBrace.FsPickler.Json
 
 module GoodCommands =
     type GoodCommands =
@@ -12,7 +15,7 @@ module GoodCommands =
         | ChangeDiscounts of List<Good.Discount>
         | AddQuantity of int
         | RemoveQuantity of int
-            interface Command<Good, GoodEvents> with
+            interface AggregateCommand<Good, GoodEvents> with
                 member this.Execute (good: Good) =
                     match this with
                     | ChangePrice price -> 
@@ -27,4 +30,89 @@ module GoodCommands =
                     | RemoveQuantity quantity ->
                         good.RemoveQuantity quantity
                         |> Result.map (fun _ -> [QuantityRemoved quantity])
-                member this.Undoer = None
+                member this.Undoer = 
+                    match this with
+                    | ChangePrice _ -> 
+                        Some 
+                            (fun (good: Good) (viewer: AggregateViewer<Good>) ->
+                                result {
+                                    let! (i, state) = viewer (good.Id) 
+                                    let oldPrice = state.Price
+                                    return
+                                        fun () ->
+                                            result {
+                                                let! (j, state) = viewer (good.Id)
+                                                let! isGreater = 
+                                                    (j >= i)
+                                                    |> Result.ofBool (sprintf "execution undo state '%d' must be after the undo command state '%d'" j i)
+                                                let result =
+                                                    state.SetPrice oldPrice 
+                                                    |> Result.map (fun _ -> [PriceChanged oldPrice])
+                                                return! result
+                                            }
+                                    }
+                            )
+                    | ChangeDiscounts _ ->
+                        Some 
+                            (fun (good: Good) (viewer: AggregateViewer<Good>) ->
+                                result {
+                                    let! (i, state) = viewer (good.Id) 
+                                    let oldDiscounts = state.Discounts
+                                    return
+                                        fun () ->
+                                            result {
+                                                let! (j, state) = viewer (good.Id)
+                                                let! isGreater = 
+                                                    (j >= i)
+                                                    |> Result.ofBool (sprintf "execution undo command state '%d' must be after the undo command state '%d'" j i)
+                                                let result =
+                                                    state.ChangeDiscounts oldDiscounts
+                                                    |> Result.map (fun _ -> [DiscountsChanged oldDiscounts])
+                                                return! result
+                                            }
+                                    }
+                            )       
+                    | AddQuantity x -> 
+                        Some 
+                            (fun (good: Good) (viewer: AggregateViewer<Good>) ->
+                                result {
+                                    let! (i, state) = viewer (good.Id) 
+                                    return
+                                        fun () ->
+                                            result {
+                                                let! (j, state) = viewer (good.Id)
+                                                let! isGreater = 
+                                                    (j >= i)
+                                                    |> Result.ofBool (sprintf "execution undo command state '%d' must be after the undo command state '%d'" j i)
+                                                let result =
+                                                    state.RemoveQuantity x
+                                                    |> Result.map (fun _ -> [QuantityRemoved x])
+                                                return! result
+                                            }
+                                    }
+
+                            )
+                    | RemoveQuantity x ->
+                        Some 
+                            (fun (good: Good) (viewer: AggregateViewer<Good>) ->
+                                result {
+                                    let! (i, state) = viewer (good.Id) 
+                                    return
+                                        fun () ->
+                                            result {
+                                                let! (j, state) = viewer (good.Id)
+                                                let! isGreater = 
+                                                    (j >= i)
+                                                    |> Result.ofBool (sprintf "execution undo command state '%d' must be after the undo command state '%d'" j i)
+                                                let result =
+                                                    state.AddQuantity x
+                                                    |> Result.map (fun _ -> [QuantityAdded x])
+                                                return! result
+                                            }
+                                    }
+                            )
+
+            static member Deserialize json =
+                globalSerializer.Deserialize<GoodCommands> json
+            member this.Serialize =
+                globalSerializer.Serialize this

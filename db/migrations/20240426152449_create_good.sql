@@ -106,5 +106,23 @@ END;
 $$;
 
 
+-- CREATE TABLE public.aggregate_undo_commands_buffer_01_good (
+--     id integer NOT NULL,
+--     aggregate_id uuid NOT NULL,
+--     command text NOT NULL,
+--     "timestamp" timestamp without time zone NOT NULL
+-- );
+
+-- ALTER TABLE public.aggregate_undo_commands_buffer_01_good ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+--     SEQUENCE NAME public.aggregate_undo_commands_buffer_01_good_id_seq
+--     START WITH 1
+--     INCREMENT BY 1
+--     NO MINVALUE
+--     NO MAXVALUE
+--     CACHE 1
+-- );
+
+-- ALTER TABLE ONLY public.aggregate_undo_commands_buffer_01_good
+--     ADD CONSTRAINT aggregate_undo_commands_buffer_01_good_pkey PRIMARY KEY (id);
 
 -- migrate:down

@@ -142,7 +142,6 @@ SET default_table_access_method = heap;
 CREATE TABLE public.aggregate_events_01_cart (
     id integer DEFAULT nextval('public.aggregate_events_01_cart_id_seq'::regclass) NOT NULL,
     aggregate_id uuid NOT NULL,
-    aggregate_state_id uuid,
     event_id integer
 );
 

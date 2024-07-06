@@ -170,8 +170,8 @@ module Supermarket =
 
         member this.AddGoodToCart (cartId: Guid, goodId: Guid, quantity: int) =
             result {
-                let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
+                let removeQuantity: AggregateCommand<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
+                let addGood: AggregateCommand<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
                 return! 
                     runTwoNAggregateCommands 
                         [goodId]
@@ -194,8 +194,8 @@ module Supermarket =
                 let commands = 
                     goods
                     |> List.map (fun (goodId, quantity) -> 
-                        let removeQuantity: Command<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
-                        let addGood: Command<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
+                        let removeQuantity: AggregateCommand<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
+                        let addGood: AggregateCommand<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
                         (removeQuantity, addGood)
                     )
                 let goodIds = goods |>> fst

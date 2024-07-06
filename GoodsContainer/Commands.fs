@@ -29,6 +29,29 @@ module GoodsContainerCommands =
                     | AddCart cartRef ->
                         goodsContainer.AddCart cartRef
                         |> Result.map (fun _ -> [CartAdded cartRef])
-                member this.Undoer = None
+                member this.Undoer = 
+                    match this with
+                    | AddGood goodRef -> 
+                        Some 
+                            (fun (goodsContainer: GoodsContainer) (viewer: StateViewer<GoodsContainer>) ->
+                                result {
+                                    let! (i, _) = viewer ()
+                                    return
+                                        fun () ->
+                                            result {
+                                                let! (j, state) = viewer ()
+                                                let! isGreater = 
+                                                    (j >= i)
+                                                    |> Result.ofBool (sprintf "execution undo state '%d' must be after the undo command state '%d'" j i)
+                                                let result =
+                                                    state.RemoveGood goodRef
+                                                    |> Result.map (fun _ -> [GoodRemoved goodRef])
+                                                return! result
+                                            }
+                                    }
+                            )
+                    | _ -> None
+
+
 
 
