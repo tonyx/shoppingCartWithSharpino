@@ -1,30 +1,32 @@
 
 module KafkaTests
 
-open ShoppingCart.Good
-open Confluent.Kafka.Admin
-open ShoppingCart.Commons
-open ShoppingCart.GoodsContainer
-open ShoppingCart.Supermarket
-open ShoppingCart.Cart
-open System
-open Sharpino.Storage
-open Sharpino.Core
-open Sharpino.KafkaReceiver
-open Sharpino.PgStorage
-open Sharpino.KafkaBroker
-open Sharpino.TestUtils
-open Sharpino.PgBinaryStore
-open Sharpino.MemoryStorage
+// open ShoppingCart.Good
+// open Confluent.Kafka.Admin
+// open ShoppingCart.Commons
+// open ShoppingCart.GoodsContainer
+// open ShoppingCart.Supermarket
+// open ShoppingCart.Cart
+// open System
+// open Sharpino.Storage
+// open Sharpino.Core
+// open Sharpino.KafkaReceiver
+// open Sharpino.PgStorage
+// open Sharpino.KafkaBroker
+// open Sharpino.TestUtils
+// open Sharpino.PgBinaryStore
+// open Sharpino.MemoryStorage
+
 open Expecto
-open Confluent.Kafka
+
+// open Confluent.Kafka
+// // open FsKafka
+// open Tests
+// open ShoppingCart.CartEvents
+// open ShoppingCart.GoodEvents
+// open FsToolkit.ErrorHandling
 // open FsKafka
-open Tests
-open ShoppingCart.CartEvents
-open ShoppingCart.GoodEvents
-open FsToolkit.ErrorHandling
-open FsKafka
-open Sharpino.CommandHandler
+// open Sharpino.CommandHandler
 
 
 // let getFromMessage<'E> value =

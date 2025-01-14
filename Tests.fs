@@ -23,8 +23,10 @@ open Expecto
 open Sharpino.Definitions
 open Sharpino.KafkaBroker
 open Sharpino.Cache
-open FsKafka
-open Confluent.Kafka
+
+// open FsKafka
+
+// open Confluent.Kafka
 open Sharpino.CommandHandler
 open ShoppingCart.CartEvents
 open ShoppingCart.GoodEvents
@@ -32,63 +34,75 @@ open Sharpino.KafkaReceiver
 open ShoppingCart.GoodsContainerEvents
 open ShoppingCart.GoodCommands
 open Sharpino.Core
+open DotNetEnv
 
 let setUp (eventStore: IEventStore<'F>) =
+    Env.Load() |> ignore
+    let password = Environment.GetEnvironmentVariable("password")
+
     eventStore.Reset GoodsContainer.Version GoodsContainer.StorageName
     eventStore.Reset Good.Version Good.StorageName
     eventStore.ResetAggregateStream Good.Version Good.StorageName
 
     eventStore.Reset Cart.Version Cart.StorageName
     eventStore.ResetAggregateStream Cart.Version Cart.StorageName
-    StateCache<GoodsContainer>.Instance.Clear()
+
+    StateCache2<GoodsContainer>.Instance.Invalidate()
     AggregateCache<Good,string>.Instance.Clear()
     AggregateCache<Cart,string>.Instance.Clear()
 
 
 // commented code contains pieces of code to work with the kafka branch (20240514_local_kafka_2, https://github.com/tonyx/Sharpino/tree/20240514_local_kafka_2)
 
+// let tryDeleteTopic (cliAdmin: IAdminClient) topicName =
+//     try
+//         cliAdmin.DeleteTopicsAsync([topicName]) |> Async.AwaitTask  |> Async.RunSynchronously
+//     with
+//     | _ -> 
+//         printf "not deleted because does not exist\n"
+//         ()
+// let topicSetup () =
+//     let config = new AdminClientConfig()
+//     config.BootstrapServers <- "localhost:9092"
+//     let adminClient = new AdminClientBuilder(config)
+//     let cliAdmin = adminClient.Build()
+//     let delete = tryDeleteTopic cliAdmin "good-01"
 
-let tryDeleteTopic (cliAdmin: IAdminClient) topicName =
-    try
-        cliAdmin.DeleteTopicsAsync([topicName]) |> Async.AwaitTask  |> Async.RunSynchronously
-    with
-    | _ -> 
-        printf "not deleted because does not exist\n"
-        ()
-let topicSetup () =
-    let config = new AdminClientConfig()
-    config.BootstrapServers <- "localhost:9092"
-    let adminClient = new AdminClientBuilder(config)
-    let cliAdmin = adminClient.Build()
-    let delete = tryDeleteTopic cliAdmin "good-01"
+//     let delete2 =  tryDeleteTopic cliAdmin "cart-01"
 
-    let delete2 =  tryDeleteTopic cliAdmin "cart-01"
+//     let delete3 = tryDeleteTopic cliAdmin "goodsContainer-01"
 
-    let delete3 = tryDeleteTopic cliAdmin "goodsContainer-01"
+//     let log = Serilog.LoggerConfiguration().CreateLogger()
 
-    let log = Serilog.LoggerConfiguration().CreateLogger()
-    let batching = Batching.Linger (System.TimeSpan.FromMilliseconds 10.)
-    let producerConfig = KafkaProducerConfig.Create("MyClientIdX", "localhost:9092", Acks.All, batching)
-    let createFirstTopic = KafkaProducer.Create(log, producerConfig, "good-01")
-    let createSecondTopic = KafkaProducer.Create(log, producerConfig, "cart-01")
-    let createThirdTopic = KafkaProducer.Create(log, producerConfig, "goodsContainer-01")
+    // let batching = Batching.Linger (System.TimeSpan.FromMilliseconds 10.)
+    // let producerConfig = KafkaProducerConfig.Create("MyClientIdX", "localhost:9092", Acks.All, batching)
+    // let createFirstTopic = KafkaProducer.Create(log, producerConfig, "good-01")
+    // let createSecondTopic = KafkaProducer.Create(log, producerConfig, "cart-01")
+    // let createThirdTopic = KafkaProducer.Create(log, producerConfig, "goodsContainer-01")
+
     ()
 
 let connection = 
+
+        Env.Load() |> ignore
+        let password = Environment.GetEnvironmentVariable("password")
+
         "Server=127.0.0.1;" +
         "Database=es_shopping_cart;" +
         "User Id=safe;"+
-        "Password=safe;"
+        $"Password={password};"
 
 let byteAConnection =
+        Env.Load() |> ignore
+        let password = Environment.GetEnvironmentVariable("password")
         "Server=127.0.0.1;" +
         "Database=es_shopping_cart_bin;" +
         "User Id=safe;"+
-        "Password=safe;"
+        $"Password={password};"
 
 let eventStoreMemory = MemoryStorage() //:> IEventStore<string>
 let eventStorePostgres = PgEventStore(connection) //:> IEventStore<string>
-let standardBroker = getKafkaBroker("localhost:9092")
+// let standardBroker = getKafkaBroker("localhost:9092")
 // let eventStorePostgresBin = PgBinaryStore(byteAConnection) 
 
 let goodsViewer = getAggregateStorageFreshStateViewer<Good, GoodEvents, 'F> eventStorePostgres
@@ -96,34 +110,12 @@ let cartViewer = getAggregateStorageFreshStateViewer<Cart, CartEvents, 'F> event
 let goodsContainerViewer = getStorageFreshStateViewer<GoodsContainer, GoodsContainerEvents, 'F> eventStorePostgres
 
 
-// let cartTopic = (Cart.StorageName + "-" + Cart.Version).Replace("_", "")
-// let goodsTopic = (Good.StorageName + "-" + Good.Version).Replace("_", "")
-// let kafkaGoodsConsumer = ConsumerX<Good, GoodEvents>(goodsTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, goodsViewer)
-// let kafkaCartConsumer = ConsumerX<Cart, CartEvents>(cartTopic, "MyClientIdX", "localhost:9092", "MyGroupIdX", 4000, cartViewer)
-
-// let initialContext = goodsContainerViewer () |> Result.get |> snd
-// let goodsContainerTopic = (GoodsContainer.StorageName + "-" + GoodsContainer.Version).Replace("_", "")
-// let kafkaGoodsContainerConsumer = ConsumerY<GoodsContainer, GoodsContainerEvents>(goodsContainerTopic, "MyClientIdY", "localhost:9092", "MyGroupIdY", 4000, initialContext, goodsContainerViewer )
-
-// let kafkaGoodsViewer: AggregateViewer<Good> = (kafkaGoodsConsumer.GetState)
-// let kafkaCartViewer: AggregateViewer<Cart> = (kafkaCartConsumer.GetState)
-// let kafkaGoodsContainerViewer: StateViewer<GoodsContainer> = fun () -> kafkaGoodsContainerConsumer.GetState ()
-
-
-// let viewerRefreshers () =
-//     // printf "REFRESHING\n"
-//     kafkaGoodsConsumer.Update()
-//     kafkaCartConsumer.Update()
-//     kafkaGoodsContainerConsumer.Update ()
-//     ()
-
 let onlyDbSetup () =
     setUp eventStorePostgres
     ()
 
 let setUpDbAndTopics () =
     setUp eventStorePostgres
-    topicSetup ()
     ()  
 
 let doNothingBroker: IEventBroker<string> =
@@ -139,6 +131,7 @@ let marketInstances =
     ]
 [<Tests>]
 let tests =
+
     testList "samples" [
         multipleTestCase "there are no good in a Supermarket" marketInstances <| fun (supermarket, eventStore, setup, _) ->
             setup()
@@ -281,7 +274,7 @@ let tests =
             let addedToCart = supermarket.AddGoodToCart(cartId, Guid.NewGuid(), 1)
             Expect.isError addedToCart "should be an error" 
 
-        multipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
+        fmultipleTestCase "add multiple goods to a cart - Ok" marketInstances <| fun (supermarket, eventStore, setup, refresh) ->
             setup ()
 
             let cartId = Guid.NewGuid()
@@ -505,7 +498,6 @@ let tests =
 
             let undoerEventsResult = undoerEvents' () 
             Expect.isError undoerEventsResult "should be an error"
-
 
     ]
     |> testSequenced

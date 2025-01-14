@@ -51,17 +51,17 @@ module Supermarket =
                 let! (_, state) = goodsViewer goodId
                 return state.Quantity
             }
-        member this.GetGoodsQuantityAsync (goodId: Guid) = 
-            Async.RunSynchronously
-                (async {
-                    return
-                        result {
-                            let! esists = this.GetGood goodId
-                            let! (_, state) = goodsViewer goodId
-                            return state.Quantity
-                        }
-                }, 100)
-            //./ |> Async.StartAsTask
+        // member this.GetGoodsQuantityAsync (goodId: Guid) = 
+        //     Async.RunSynchronously
+        //         (async {
+        //             return
+        //                 result {
+        //                     let! esists = this.GetGood goodId
+        //                     let! (_, state) = goodsViewer goodId
+        //                     return state.Quantity
+        //                 }
+        //         }, 100)
+        //     //./ |> Async.StartAsTask
 
         member this.AddQuantity (goodId: Guid, quantity: int) = 
             result {
@@ -128,13 +128,6 @@ module Supermarket =
                     |> runCommand<GoodsContainer, GoodsContainerEvents, string> eventStore eventBroker 
             }
 
-        member this.RemoveGoodAsync (id: Guid) =
-            async {
-                return 
-                    this.RemoveGood id
-            }
-            |> Async.StartAsTask
-
         member this.AddCart (cart: Cart) = 
             result {
                 return! 
@@ -142,13 +135,6 @@ module Supermarket =
                     |> AddCart
                     |> runInitAndCommand<GoodsContainer, GoodsContainerEvents, Cart, string> eventStore eventBroker cart
             }
-
-        member this.AddCartAsync (cart: Cart) =
-            async {
-                return 
-                    this.AddCart cart
-            } 
-            |> Async.StartAsTask
 
         member this.GetCart (cartRef: Guid) = 
             result {
@@ -160,13 +146,6 @@ module Supermarket =
                 let! (_, state) = cartViewer cartRef
                 return state
             }
-
-        member this.GetCartAsync (cartRef: Guid) =
-            async {
-                return 
-                    this.GetCart cartRef
-            } 
-            |> Async.StartAsTask
 
         member this.AddGoodToCart (cartId: Guid, goodId: Guid, quantity: int) =
             result {
@@ -194,33 +173,27 @@ module Supermarket =
                 let commands = 
                     goods
                     |> List.map (fun (goodId, quantity) -> 
-                        let removeQuantity: AggregateCommand<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
+                        let removeSomeQuantity: AggregateCommand<Good, GoodEvents> = GoodCommands.RemoveQuantity quantity
                         let addGood: AggregateCommand<Cart, CartEvents> = CartCommands.AddGood (goodId, quantity) 
-                        (removeQuantity, addGood)
+                        (removeSomeQuantity, addGood)
                     )
                 let goodIds = goods |>> fst
-                let commandRemove = commands |>> fst
-                let commandAdd = commands |>> snd
+                let removeFromMarket = commands |>> fst
+                let addToCart = commands |>> snd
                 let size = goods.Length
 
                 let cartids =
                     [1..size] |>> (fun _ -> cartId)
                 
                 return!
-                    runTwoNAggregateCommands 
+                    forceRunTwoNAggregateCommands 
                         goodIds
                         cartids
                         eventStore 
                         eventBroker 
-                        commandRemove
-                        commandAdd
+                        removeFromMarket
+                        addToCart
             } 
-        member this.AddGoodsToCartAsync (cartId: Guid, goods: (Guid * int) list) =
-            async {
-                return 
-                    this.AddGoodsToCart (cartId, goods)
-            } 
-            |> Async.StartAsTask
 
 
   

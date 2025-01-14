@@ -1,11 +1,13 @@
 -- migrate:up
 
+
 CREATE TABLE public.events_01_good (
                                           id integer NOT NULL,
                                           aggregate_id uuid NOT NULL,
                                           event text NOT NULL,
                                           published boolean NOT NULL DEFAULT false,
-                                          "timestamp" timestamp without time zone NOT NULL
+                                          "timestamp" timestamp without time zone NOT NULL,
+                                          md text 
 );
 
 ALTER TABLE public.events_01_good ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
@@ -72,13 +74,30 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_good(event, aggregate_id, timestamp)
-VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id,  now()) RETURNING id INTO inserted_id;
+return inserted_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION insert_md_01_good_event_and_return_id(
+    IN event_in text,
+    IN aggregate_id uuid,
+    IN md text
+)
+RETURNS int
+       
+LANGUAGE plpgsql
+AS $$
+DECLARE
+inserted_id integer;
+BEGIN
+INSERT INTO events_01_good(event, aggregate_id, timestamp, md)
+VALUES(event_in::text, aggregate_id, now(), md) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
 
 CREATE OR REPLACE FUNCTION insert_01_good_aggregate_event_and_return_id(
-
     IN event_in text,
     IN aggregate_id uuid 
 )
@@ -94,35 +113,32 @@ BEGIN
 
 INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
 VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
-
--- INSERT INTO aggregate_events_01_good(aggregate_id, event_id, aggregate_state_id )
--- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
-
-INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
-VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
-
 return event_id;
 END;
 $$;
 
 
--- CREATE TABLE public.aggregate_undo_commands_buffer_01_good (
---     id integer NOT NULL,
---     aggregate_id uuid NOT NULL,
---     command text NOT NULL,
---     "timestamp" timestamp without time zone NOT NULL
--- );
+CREATE OR REPLACE FUNCTION insert_md_01_good_aggregate_event_and_return_id(
+    IN event_in text,
+    IN aggregate_id uuid,
+    IN md text   
+)
+RETURNS int
+    
+LANGUAGE plpgsql
+AS $$
+DECLARE
+inserted_id integer;
+    event_id integer;
+BEGIN
+    event_id := insert_md_01_good_event_and_return_id(event_in, aggregate_id, md);
 
--- ALTER TABLE public.aggregate_undo_commands_buffer_01_good ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
---     SEQUENCE NAME public.aggregate_undo_commands_buffer_01_good_id_seq
---     START WITH 1
---     INCREMENT BY 1
---     NO MINVALUE
---     NO MAXVALUE
---     CACHE 1
--- );
+INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
+return event_id;
+END;
+$$;
 
--- ALTER TABLE ONLY public.aggregate_undo_commands_buffer_01_good
---     ADD CONSTRAINT aggregate_undo_commands_buffer_01_good_pkey PRIMARY KEY (id);
+
 
 -- migrate:down

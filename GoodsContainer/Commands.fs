@@ -22,13 +22,13 @@ module GoodsContainerCommands =
                     match this with
                     | AddGood goodRef -> 
                         goodsContainer.AddGood goodRef
-                        |> Result.map (fun _ -> [GoodAdded goodRef])
+                        |> Result.map (fun s -> (s, [GoodAdded goodRef]))
                     | RemoveGood goodRef ->
                         goodsContainer.RemoveGood goodRef
-                        |> Result.map (fun _ -> [GoodRemoved goodRef])
+                        |> Result.map (fun s -> (s, [GoodRemoved goodRef]))
                     | AddCart cartRef ->
                         goodsContainer.AddCart cartRef
-                        |> Result.map (fun _ -> [CartAdded cartRef])
+                        |> Result.map (fun s -> (s, [CartAdded cartRef]))
                 member this.Undoer = 
                     match this with
                     | AddGood goodRef -> 

@@ -20,16 +20,16 @@ module GoodCommands =
                     match this with
                     | ChangePrice price -> 
                         good.SetPrice price
-                        |> Result.map (fun _ -> [PriceChanged price])
+                        |> Result.map (fun s -> (s, [PriceChanged price]))
                     | ChangeDiscounts discounts ->
                         good.ChangeDiscounts discounts
-                        |> Result.map (fun _ -> [DiscountsChanged discounts])
+                        |> Result.map (fun s -> (s, [DiscountsChanged discounts]))
                     | AddQuantity quantity ->
                         good.AddQuantity quantity
-                        |> Result.map (fun _ -> [QuantityAdded quantity])
+                        |> Result.map (fun s -> (s, [QuantityAdded quantity]))
                     | RemoveQuantity quantity ->
                         good.RemoveQuantity quantity
-                        |> Result.map (fun _ -> [QuantityRemoved quantity])
+                        |> Result.map (fun s -> (s, [QuantityRemoved quantity]))
                 member this.Undoer = 
                     match this with
                     | ChangePrice _ -> 

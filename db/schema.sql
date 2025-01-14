@@ -31,10 +31,6 @@ BEGIN
 
 INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
 VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
-    event_id := insert_01_cart_event_and_return_id(event_in, aggregate_id);
-
-INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
-VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
 return event_id;
 END;
 $$;
@@ -51,7 +47,7 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_cart(event, aggregate_id, timestamp)
-VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id,  now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
@@ -72,13 +68,6 @@ BEGIN
 
 INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
 VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
-
--- INSERT INTO aggregate_events_01_good(aggregate_id, event_id, aggregate_state_id )
--- VALUES(aggregate_id, event_id, aggregate_state_id) RETURNING id INTO inserted_id;
-
-INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
-VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
-
 return event_id;
 END;
 $$;
@@ -95,7 +84,7 @@ DECLARE
 inserted_id integer;
 BEGIN
 INSERT INTO events_01_good(event, aggregate_id, timestamp)
-VALUES(event_in::text, aggregate_id, now()) RETURNING id INTO inserted_id;
+VALUES(event_in::text, aggregate_id,  now()) RETURNING id INTO inserted_id;
 return inserted_id;
 END;
 $$;
@@ -114,6 +103,98 @@ BEGIN
     INSERT INTO events_01_goodsContainer(event, timestamp)
     VALUES(event_in::text, now()) RETURNING id INTO inserted_id;
     return inserted_id;
+
+END;
+$$;
+
+
+--
+-- Name: insert_md_01_cart_aggregate_event_and_return_id(text, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.insert_md_01_cart_aggregate_event_and_return_id(event_in text, aggregate_id uuid, md text) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+inserted_id integer;
+    event_id integer;
+BEGIN
+    event_id := insert_md_01_cart_event_and_return_id(event_in, aggregate_id, md);
+
+INSERT INTO aggregate_events_01_cart(aggregate_id, event_id)
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
+return event_id;
+END;
+$$;
+
+
+--
+-- Name: insert_md_01_cart_event_and_return_id(text, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.insert_md_01_cart_event_and_return_id(event_in text, aggregate_id uuid, md text) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+inserted_id integer;
+BEGIN
+INSERT INTO events_01_cart(event, aggregate_id, timestamp, md)
+VALUES(event_in::text, aggregate_id, now(), md) RETURNING id INTO inserted_id;
+return inserted_id;
+END;
+$$;
+
+
+--
+-- Name: insert_md_01_good_aggregate_event_and_return_id(text, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.insert_md_01_good_aggregate_event_and_return_id(event_in text, aggregate_id uuid, md text) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+inserted_id integer;
+    event_id integer;
+BEGIN
+    event_id := insert_md_01_good_event_and_return_id(event_in, aggregate_id, md);
+
+INSERT INTO aggregate_events_01_good(aggregate_id, event_id)
+VALUES(aggregate_id, event_id) RETURNING id INTO inserted_id;
+return event_id;
+END;
+$$;
+
+
+--
+-- Name: insert_md_01_good_event_and_return_id(text, uuid, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.insert_md_01_good_event_and_return_id(event_in text, aggregate_id uuid, md text) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+inserted_id integer;
+BEGIN
+INSERT INTO events_01_good(event, aggregate_id, timestamp, md)
+VALUES(event_in::text, aggregate_id, now(), md) RETURNING id INTO inserted_id;
+return inserted_id;
+END;
+$$;
+
+
+--
+-- Name: insert_md_01_goodscontainer_event_and_return_id(text, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.insert_md_01_goodscontainer_event_and_return_id(event_in text, md_in text) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+inserted_id integer;
+BEGIN
+INSERT INTO events_01_goodsContainer(event, timestamp, md)
+VALUES(event_in::text, now(), md_in) RETURNING id INTO inserted_id;
+return inserted_id;
 
 END;
 $$;
@@ -178,7 +259,8 @@ CREATE TABLE public.events_01_cart (
     aggregate_id uuid NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    "timestamp" timestamp without time zone NOT NULL
+    "timestamp" timestamp without time zone NOT NULL,
+    md text
 );
 
 
@@ -205,7 +287,8 @@ CREATE TABLE public.events_01_good (
     aggregate_id uuid NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    "timestamp" timestamp without time zone NOT NULL
+    "timestamp" timestamp without time zone NOT NULL,
+    md text
 );
 
 
@@ -231,7 +314,8 @@ CREATE TABLE public.events_01_goodscontainer (
     id integer NOT NULL,
     event text NOT NULL,
     published boolean DEFAULT false NOT NULL,
-    "timestamp" timestamp without time zone NOT NULL
+    "timestamp" timestamp without time zone NOT NULL,
+    md text
 );
 
 
@@ -349,6 +433,14 @@ ALTER TABLE ONLY public.aggregate_events_01_good
 
 
 --
+-- Name: events_01_goodscontainer events_01_goodscontainer_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events_01_goodscontainer
+    ADD CONSTRAINT events_01_goodscontainer_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: events_01_cart events_cart_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -365,19 +457,19 @@ ALTER TABLE ONLY public.events_01_good
 
 
 --
--- Name: events_01_goodscontainer events_goodscontainer_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events_01_goodscontainer
-    ADD CONSTRAINT events_goodscontainer_pkey PRIMARY KEY (id);
-
-
---
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: snapshots_01_goodscontainer snapshots_01_goodscontainer_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.snapshots_01_goodscontainer
+    ADD CONSTRAINT snapshots_01_goodscontainer_pkey PRIMARY KEY (id);
 
 
 --
@@ -394,14 +486,6 @@ ALTER TABLE ONLY public.snapshots_01_cart
 
 ALTER TABLE ONLY public.snapshots_01_good
     ADD CONSTRAINT snapshots_good_pkey PRIMARY KEY (id);
-
-
---
--- Name: snapshots_01_goodscontainer snapshots_goodscontainer_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.snapshots_01_goodscontainer
-    ADD CONSTRAINT snapshots_goodscontainer_pkey PRIMARY KEY (id);
 
 
 --

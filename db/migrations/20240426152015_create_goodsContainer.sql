@@ -4,7 +4,8 @@ CREATE TABLE public.events_01_goodsContainer (
                                           id integer NOT NULL,
                                           event text NOT NULL,
                                           published boolean NOT NULL DEFAULT false,
-                                          "timestamp" timestamp without time zone NOT NULL
+                                          "timestamp" timestamp without time zone NOT NULL,
+                                          md text 
 );
 
 ALTER TABLE public.events_01_goodsContainer ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
@@ -31,19 +32,18 @@ CREATE TABLE public.snapshots_01_goodsContainer (
 );
 
 ALTER TABLE ONLY public.events_01_goodsContainer
-    ADD CONSTRAINT events_goodsContainer_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT events_01_goodsContainer_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY public.snapshots_01_goodsContainer
-    ADD CONSTRAINT snapshots_goodsContainer_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT snapshots_01_goodsContainer_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY public.snapshots_01_goodsContainer
     ADD CONSTRAINT event_01_goodsContainer_fk FOREIGN KEY (event_id) REFERENCES public.events_01_goodsContainer(id) MATCH FULL ON DELETE CASCADE;
 
 
 CREATE OR REPLACE FUNCTION insert_01_goodsContainer_event_and_return_id(
-    IN event_in text 
+    IN event_in text
 )
-
 RETURNS int
        
 LANGUAGE plpgsql
@@ -54,6 +54,23 @@ BEGIN
     INSERT INTO events_01_goodsContainer(event, timestamp)
     VALUES(event_in::text, now()) RETURNING id INTO inserted_id;
     return inserted_id;
+
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION insert_md_01_goodsContainer_event_and_return_id(
+    IN event_in text, md_in text
+)
+RETURNS int
+       
+LANGUAGE plpgsql
+AS $$
+DECLARE
+inserted_id integer;
+BEGIN
+INSERT INTO events_01_goodsContainer(event, timestamp, md)
+VALUES(event_in::text, now(), md_in) RETURNING id INTO inserted_id;
+return inserted_id;
 
 END;
 $$;
